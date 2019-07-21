@@ -1,7 +1,14 @@
 package de.codesourcery.quix;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 public class Node
 {
+    private static long ID = 0;
+
+    public final long id=ID++;
     public int x,y;
 
     public Line up;
@@ -16,6 +23,18 @@ public class Node
     {
         set(x,y);
     }
+
+    public float dst(int x,int y) {
+        return (float) Math.sqrt( dst2(x,y) );
+    }
+
+    public int dst2(int x,int y)
+    {
+        int dx = this.x - x;
+        int dy = this.y - y;
+        return dx*dx + dy*dy;
+    }
+
 
     public void set(int x,int y) {
         this.x = x;
@@ -65,13 +84,12 @@ public class Node
     @Override
     public String toString()
     {
-        return "Node{" +
-                   "x=" + x +
-                   ", y=" + y +
-                   ", up=" + up +
-                   ", left=" + left +
-                   ", right=" + right +
-                   ", down=" + down +
-                   '}';
+        final boolean hasLeft = left != null;
+        final boolean hasRight = right != null;
+        final boolean hasUp = up != null;
+        final boolean hasDown = down != null;
+        final String directions = List.of( hasLeft?"LEFT":"", hasRight?"RIGHT":"",
+                hasUp?"UP":"", hasDown?"DOWN":"").stream().filter( x -> x.length()>0 ).collect( Collectors.joining(","));
+        return "Node[ "+id+" ] = {"+directions+"}";
     }
 }

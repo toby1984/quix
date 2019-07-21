@@ -77,70 +77,61 @@ public abstract class IncompleteLineCollection extends LineCollection
                 final Line previousLine = currentLine.shallowCopy();
                 add( previousLine );
                 currentLine.set( x0,y0,x1,y1);
+                currentLine.node0 = currentLine.node1 = null;
+                final Node newNode = new Node(x0,y0);
+                final Direction previousDirection = currentDirection;
+                currentDirection = newDirection;
                 switch(newDirection)
                 {
                     case LEFT: // we're now moving left;
-                        Node con = new Node(x0,y0);
-                        con.setLeft(currentLine);
-                        switch( currentDirection )
+                        switch( previousDirection )
                         {
                             case UP:
-                                con.setDown(previousLine);
+                                previousLine.setTopNode( newNode );
                                 break;
                             case DOWN:
-                                con.setUp(previousLine);
+                                previousLine.setBottomNode( newNode );
                                 break;
-                            default:
-                                throw new RuntimeException("Unreachable code reached");
                         }
+                        currentLine.setRightNode( newNode );
                         break;
                     case RIGHT:
-                        con = new Node(x0,y0);
-                        con.setRight(currentLine);
-                        switch( currentDirection )
+                        switch( previousDirection )
                         {
                             case UP:
-                                con.setDown(previousLine);
+                                previousLine.setTopNode( newNode );
                                 break;
                             case DOWN:
-                                con.setUp(previousLine);
+                                previousLine.setBottomNode( newNode );
                                 break;
-                            default:
-                                throw new RuntimeException("Unreachable code reached");
                         }
+                        currentLine.setLeftNode( newNode );
                         break;
                     case UP:
-                        con = new Node(x0,y0);
-                        con.setUp(currentLine);
-                        switch( currentDirection )
+                        switch( previousDirection )
                         {
                             case LEFT:
-                                con.setRight(previousLine);
+                                previousLine.setLeftNode( newNode );
                                 break;
                             case RIGHT:
-                                con.setLeft(previousLine);
+                                previousLine.setRightNode( newNode );
                                 break;
-                            default:
-                                throw new RuntimeException("Unreachable code reached");
                         }
+                        currentLine.setBottomNode( newNode );
                         break;
                     case DOWN:
-                        con = new Node(x0,y0);
-                        con.setDown(currentLine);
-                        switch( currentDirection )
+                        switch( previousDirection )
                         {
                             case LEFT:
-                                con.setRight(previousLine);
+                                previousLine.setLeftNode( newNode );
                                 break;
                             case RIGHT:
-                                con.setLeft(previousLine);
+                                previousLine.setRightNode( newNode );
                                 break;
-                            default:
-                                throw new RuntimeException("Unreachable code reached");
                         }
+                        currentLine.setTopNode( newNode );
                         break;
                 }
-                currentDirection = newDirection;
             }
             return MoveResult.MOVED;
         }
@@ -161,19 +152,15 @@ public abstract class IncompleteLineCollection extends LineCollection
         switch( currentDirection )
         {
             case LEFT:
-                newNode.setRight(currentLine);
                 currentLine.setLeftNode(newNode);
                 break;
             case RIGHT:
-                newNode.setLeft(currentLine);
                 currentLine.setRightNode(newNode);
                 break;
             case UP:
-                newNode.setDown(currentLine);
                 currentLine.setTopNode(newNode);
                 break;
             case DOWN:
-                newNode.setUp(currentLine);
                 currentLine.setBottomNode(newNode);
                 break;
         }

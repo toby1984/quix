@@ -4,6 +4,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
+import javax.swing.ToolTipManager;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -11,6 +12,8 @@ import java.awt.Graphics2D;
 import java.awt.Toolkit;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.lang.reflect.InvocationTargetException;
 
@@ -29,6 +32,8 @@ public class Main extends JFrame
     private boolean down;
 
     private boolean fastSpeed;
+
+    private Line highlightedLine; // debugging
 
     public Main()
     {
@@ -85,9 +90,31 @@ public class Main extends JFrame
 
         private final Quix quix = new Quix();
 
-        public MyPanel(GameState gameState) {
+        public MyPanel(GameState gameState)
+        {
+            ToolTipManager.sharedInstance().registerComponent( this );
+            ToolTipManager.sharedInstance().setDismissDelay( 3000 );
             setupQuix(gameState);
             setFocusable( true );
+            addMouseMotionListener( new MouseAdapter()
+            {
+                private final Vec2 v = new Vec2();
+
+                @Override
+                public void mouseMoved(MouseEvent e)
+                {
+                    v.set( e.getX(), e.getY() );
+                    var newHl = gameState.getClosestLine( v );
+                    if ( newHl != highlightedLine )
+                    {
+                        if ( newHl != null )
+                        {
+                            setToolTipText( newHl.toString() );
+                        }
+                        highlightedLine = newHl;
+                    }
+                }
+            });
             addKeyListener( new KeyAdapter()
             {
                 @Override
@@ -185,14 +212,12 @@ public class Main extends JFrame
             gfx.fillArc( gameState.player.x-(int) radius/2,
                     gameState.player.y - (int) radius/2 , (int) radius, (int) radius, 0,360 );
 
+            // draw highlighted line (if any)
+            if ( highlightedLine != null ) {
+                gfx.setColor(Color.GREEN);
+                highlightedLine.draw(gfx);
+            }
             Toolkit.getDefaultToolkit().sync();
-        }
-
-        private void draw(Line line, Color color,Graphics2D g)
-        {
-            g.setColor(  color  );
-            line.draw(g);
-            System.out.println("DRAW: "+line);
         }
     }
 }

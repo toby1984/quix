@@ -1,5 +1,6 @@
 package de.codesourcery.quix;
 
+import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.util.Objects;
@@ -133,7 +134,7 @@ public class Line
     public String toString()
     {
         String orientation = isVertical() ? "vertical" : isHorizontal() ? "horizontal" : "";
-        return orientation+" line ("+x0+","+y0+") -> ("+x1+","+y1+"), m = "+m;
+        return orientation+" line ("+x0+","+y0+") -> ("+x1+","+y1+"), m = "+m+", node0: "+node0+", node1: "+node1;
     }
 
     public boolean contains(int cx,int cy)
@@ -176,7 +177,7 @@ public class Line
         if ( ! isHorizontal() ) {
             throw new UnsupportedOperationException( "Must not call setLeftNode() on non-horizontal line " + this );
         }
-        if ( x0 < x1 ) {
+        if ( x0 <= x1 ) {
             node.set( x0,y0 );
             this.node0 = node;
         } else {
@@ -190,7 +191,7 @@ public class Line
         if ( ! isHorizontal() ) {
             throw new UnsupportedOperationException( "Must not call setRightNode() on non-horizontal line " + this );
         }
-        if ( x0 < x1 )
+        if ( x0 <= x1 )
         {
             node.set( x1,y1 );
             this.node1 = node;
@@ -207,7 +208,7 @@ public class Line
         if ( ! isVertical() ) {
             throw new UnsupportedOperationException( "Must not call setTopNode() on non-vertical line " + this );
         }
-        if ( y0 < y1 )
+        if ( y0 <= y1 )
         {
             node.set( x0,y0 );
             this.node0 = node;
@@ -225,7 +226,7 @@ public class Line
         if ( ! isVertical() ) {
             throw new UnsupportedOperationException( "Must not call setBottomNode() on non-vertical line " + this );
         }
-        if ( y0 < y1 )
+        if ( y0 <= y1 )
         {
             node.set( x1,y1 );
             this.node1 = node;
@@ -243,10 +244,7 @@ public class Line
         if ( ! isHorizontal() ) {
             throw new UnsupportedOperationException( "Must not call leftNode() on non-horizontal line " + this );
         }
-        if ( x0 < x1 ) {
-            return node0;
-        }
-        return node1;
+        return x0 < x1 ? node0 : node1;
     }
 
     public Node rightNode()
@@ -254,10 +252,7 @@ public class Line
         if ( ! isHorizontal() ) {
             throw new UnsupportedOperationException( "Must not call rightNode() on non-horizontal line " + this );
         }
-        if ( x0 < x1 ) {
-            return node1;
-        }
-        return node0;
+        return x0 < x1 ? node1 : node0;
     }
 
     public Node topNode()
@@ -265,10 +260,7 @@ public class Line
         if ( ! isVertical() ) {
             throw new UnsupportedOperationException( "Must not call topNode() on non-vertical line " + this );
         }
-        if ( y0 < y1 ) {
-            return node0;
-        }
-        return node1;
+        return y0 < y1 ? node0 : node1;
     }
 
     public Node bottomNode()
@@ -276,17 +268,7 @@ public class Line
         if ( ! isVertical() ) {
             throw new UnsupportedOperationException( "Must not call bottomNode() on non-vertical line " + this );
         }
-        if ( y0 < y1 ) {
-            return node1;
-        }
-        return node0;
-    }
-
-    public float length()
-    {
-        int dx = x1 - x0;
-        int dy = y1 - y0;
-        return (float) Math.sqrt( dx*dx + dy*dy );
+        return y0 < y1 ? node1 : node0;
     }
 
     @Override
@@ -422,6 +404,26 @@ The last thing to do is check that Xa is included into Ia:
     public void draw(Graphics2D gfx)
     {
         gfx.drawLine( x0,y0,x1,y1 );
+
+        final int radius = 6;
+        if ( isAxisParallel() )
+        {
+            final Color current = gfx.getColor();
+            final Node left = isHorizontal() ? leftNode() : topNode();
+            if ( left != null )
+            {
+                gfx.setColor( Color.GREEN );
+                gfx.fillArc( left.x - radius / 2, left.y - radius / 2, radius, radius, 0, 360 );
+            }
+
+            final Node right = isHorizontal() ? rightNode() : bottomNode() ;
+            if ( right != null )
+            {
+                gfx.setColor( Color.RED );
+                gfx.fillArc( right.x - radius / 2, right.y - radius / 2, radius, radius, 0, 360 );
+            }
+            gfx.setColor(current);
+        }
     }
 
     public Node getNodeForEndpoint(int x,int y) {
@@ -432,5 +434,19 @@ The last thing to do is check that Xa is included into Ia:
             return node1;
         }
         return null;
+    }
+
+    public void assertValid() {
+
+        if ( node0 != null ) {
+            if ( node0.x != x0 || node0.y != y0 ) {
+                throw new IllegalStateException("Line has broken node0: "+this);
+            }
+        }
+        if ( node1 != null ) {
+            if ( node1.x != x1 || node1.y != y1 ) {
+                throw new IllegalStateException("Line has broken node1: "+this);
+            }
+        }
     }
 }

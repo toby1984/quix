@@ -15,7 +15,10 @@ public class Entity
 
     public void setCurrentLine(Line currentLine)
     {
-        System.out.println("CURRENT LINE: "+currentLine);
+        System.out.println("SWITCHING CURRENT LINE: "+this.currentLine+" -> "+currentLine);
+        if ( ! currentLine.contains( x,y ) ) {
+            System.err.println("WARNING: Entity ("+x+","+y+") not on current line "+currentLine);
+        }
         this.currentLine = currentLine;
     }
 }

@@ -158,6 +158,7 @@ public class LineCollection implements ICollisionCheck
             for (int i = 0, linesSize = lines.size(); i < linesSize; i++)
             {
                 final Line line = lines.get( i );
+                line.assertValid(); // TODO: Remove debug code
                 x[i] = line.x0;
                 y[i] = line.y0;
             }
@@ -169,6 +170,7 @@ public class LineCollection implements ICollisionCheck
             gfx.setColor( lineColor );
             for ( Line l : lines )
             {
+                l.assertValid(); // TODO: Remove debug code
                 l.draw( gfx );
             }
         }
@@ -213,21 +215,21 @@ public class LineCollection implements ICollisionCheck
             final Line leftPart;
             if ( line.x0 < xSplit ) {
                 leftPart = new Line(line.x0,line.y0,xSplit,ySplit);
+                leftPart.setLeftNode( line.leftNode() );
                 collection.add( leftPart );
                 rightPart = line;
                 rightPart.set(xSplit,ySplit,rightPart.x1, rightPart.y1 );
-                newNode.setLeft(leftPart);
-                newNode.setRight(rightPart);
             } else {
                 // line.x0 >= xSplit
                 rightPart = new Line(xSplit,ySplit,line.x0,line.y0);
+                rightPart.setRightNode( line.rightNode() );
                 collection.add( rightPart );
                 leftPart = line;
                 leftPart.set(leftPart.x1, leftPart.y1, xSplit,ySplit);
             }
             System.out.println("into \nleft = "+leftPart+"\nright = "+rightPart+"\n");
-            newNode.setLeft(leftPart);
-            newNode.setRight(rightPart);
+            leftPart.setRightNode( newNode );
+            rightPart.setLeftNode( newNode );
         }
         else if ( line.isVertical() )
         {
@@ -243,19 +245,21 @@ public class LineCollection implements ICollisionCheck
             if ( line.y0 < ySplit )
             {
                 topPart = new Line(xSplit,ySplit,line.x0,line.y0);
+                topPart.setTopNode( line.topNode() );
                 collection.add( topPart );
                 bottomPart = line;
                 bottomPart.set(xSplit,ySplit,line.x1,line.y1);
             } else {
                 // line.y0 >= ySplit
                 bottomPart = new Line(xSplit,ySplit,line.x0,line.y0);
+                bottomPart.setBottomNode( line.bottomNode() );
                 collection.add( bottomPart );
                 topPart = line;
                 topPart.set(line.x1, line.y1, xSplit, ySplit);
             }
             System.out.println("into \ntop = "+topPart+"\nbottom = "+bottomPart+"\n");
-            newNode.setUp(topPart);
-            newNode.setDown(bottomPart);
+            topPart.setBottomNode( newNode );
+            bottomPart.setTopNode( newNode );
         } else {
             throw new IllegalStateException("Line is neither vertical nor horizontal? "+line);
         }

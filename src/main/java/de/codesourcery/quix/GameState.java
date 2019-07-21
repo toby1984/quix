@@ -137,7 +137,7 @@ public class GameState implements ICollisionCheck
             {
                 if ( this.currentPoly == null )
                 {
-                    // TODO: Check whether there's free space above us...
+                    // TODO: Check whether there's free space below us...
                     Node newNode = playfieldLines.split(entity.getCurrentLine(),entity.x, entity.y );
                     currentPoly = new IncompleteLineCollection(mode, entity.x, entity.y, Direction.DOWN, newNode) {
                         @Override
@@ -386,6 +386,9 @@ public class GameState implements ICollisionCheck
         final Line currentLine = player.getCurrentLine();
         gfx.setColor(Color.RED);
         currentLine.draw(gfx);
+
+        gfx.drawString("Entity @ "+player.x+","+player.y,20,20);
+
     }
 
     public void drawBorder(Graphics2D gfx)
@@ -413,7 +416,20 @@ public class GameState implements ICollisionCheck
             currentPoly.draw(gfx);
         }
         gfx.drawString("Mode: "+getMode(Mode.MOVE),15,15);
+    }
 
+    public Line getClosestLine(Vec2 p) {
 
+        Line result = null;
+        float distance = 0;
+        for ( Line l : playfieldLines.lines )
+        {
+            float dist = LinAlg.distToLineSegment(l, p);
+            if ( result == null || dist < distance  ) {
+                result = l;
+                distance = dist;
+            }
+        }
+        return distance < 20 ? result : null;
     }
 }
