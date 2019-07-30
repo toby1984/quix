@@ -10,10 +10,12 @@ public abstract class IncompleteLineCollection extends LineCollection
         TOUCHED_FOREIGN_LINE
     }
 
+    public final Node firstNode;
+    public Node lastNode;
+
     public DirectedLine currentLine;
 
     public final Mode mode;
-    public boolean completed;
 
     public IncompleteLineCollection(Mode mode, Direction currentDirection, Node newNode)
     {
@@ -23,8 +25,9 @@ public abstract class IncompleteLineCollection extends LineCollection
         if ( mode == null || mode == Mode.MOVE ) {
             throw new IllegalArgumentException("mode cannot be NULL or Mode.MOVE");
         }
+        this.firstNode = newNode;
         this.mode = mode;
-        currentLine = new DirectedLine( currentDirection, newNode );
+        this.currentLine = new DirectedLine( currentDirection, newNode );
 
         switch( currentDirection )
         {
@@ -46,7 +49,7 @@ public abstract class IncompleteLineCollection extends LineCollection
 
     public MoveResult tryMove(Direction newDirection,ICollisionCheck check)
     {
-        if ( completed ) {
+        if ( lastNode != null ) {
             throw new IllegalStateException("Already completed");
         }
         if ( newDirection == currentLine.direction.opposite() ) {
@@ -81,11 +84,12 @@ public abstract class IncompleteLineCollection extends LineCollection
         }
         // we hit a line but it's none of our own
         // -> split the line, inserting a new node here
-        completed = true;
 
         add( currentLine );
 
         final Node newNode = check.split(line, x1, y1);
+        lastNode = newNode;
+
         switch( currentLine.direction )
         {
             case LEFT:
@@ -110,7 +114,7 @@ public abstract class IncompleteLineCollection extends LineCollection
     public void draw(Graphics2D gfx)
     {
         super.draw(gfx);
-        if ( ! completed )
+        if ( lastNode == null )
         {
             currentLine.draw(gfx);
         }

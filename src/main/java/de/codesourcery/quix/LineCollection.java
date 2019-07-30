@@ -30,6 +30,19 @@ public class LineCollection implements ICollisionCheck
         this.drawFilled = drawFilled;
     }
 
+    public Line findLine(Node n0, Node n1)
+    {
+        for (int i = 0, linesSize = lines.size(); i < linesSize; i++)
+        {
+            Line l = lines.get(i);
+            if (l.hasEndpoints(n0, n1))
+            {
+                return l;
+            }
+        }
+        return null;
+    }
+
     public void clear() {
         lines.clear();
     }
@@ -238,8 +251,8 @@ public class LineCollection implements ICollisionCheck
             final Node bottom = line.bottomNode();
             final Line newLine = new Line(middle, bottom);
             line.setBottomNode( middle );
-            middle.setUp( line );
             middle.setDown( newLine );
+            bottom.setUp( newLine );
             collection.add( newLine );
         } else {
             throw new IllegalStateException("Line is neither vertical nor horizontal? "+line);

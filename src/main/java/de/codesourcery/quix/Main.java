@@ -16,11 +16,15 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.lang.reflect.InvocationTargetException;
+import java.util.function.BiConsumer;
 
 public class Main extends JFrame
 {
     private static final int PLAYFIELD_XOFFSET = 10;
     private static final int PLAYFIELD_YOFFSET = 10;
+
+    public static final boolean DEBUG_NODES = true;
+    public static final boolean DEBUG_LINES = false;
 
     private final GameState gameState = new GameState();
     private final MyPanel panel = new MyPanel(gameState);
@@ -33,6 +37,7 @@ public class Main extends JFrame
 
     private boolean fastSpeed;
 
+    private Node highlightedNode; // debugging
     private Line highlightedLine; // debugging
 
     public Main()
@@ -108,14 +113,36 @@ public class Main extends JFrame
                 public void mouseMoved(MouseEvent e)
                 {
                     v.set( e.getX(), e.getY() );
-                    var newHl = gameState.getClosestLine( v );
-                    if ( newHl != highlightedLine )
+
+                    if ( DEBUG_NODES )
                     {
-                        if ( newHl != null )
+                        var newHL = gameState.getClosestNode(v);
+                        if (newHL != highlightedNode)
                         {
-                            setToolTipText( newHl.toString() );
+                            if (newHL != null)
+                            {
+                                System.out.println("-----------");
+                                System.out.println("Node "+newHL);
+                                newHL.visitDirections((dir,line) -> {
+                                    System.out.println( dir+" : "+line);
+                                });
+                                setToolTipText(newHL.toString());
+                            }
+                            highlightedNode = newHL;
                         }
-                        highlightedLine = newHl;
+                    }
+
+                    if ( DEBUG_LINES )
+                    {
+                        var newHl = gameState.getClosestLine( v );
+                        if ( newHl != highlightedLine )
+                        {
+                            if ( newHl != null )
+                            {
+                                setToolTipText( newHl.toString() );
+                            }
+                            highlightedLine = newHl;
+                        }
                     }
                 }
             });
@@ -124,7 +151,11 @@ public class Main extends JFrame
                 @Override
                 public void keyPressed(KeyEvent e)
                 {
-                    switch( e.getKeyCode() ) {
+                    switch( e.getKeyCode() )
+                    {
+                        case KeyEvent.VK_BACK_SPACE:
+                            gameState.restart();
+                            break;
                         case KeyEvent.VK_SPACE:
                             fastSpeed = true;
                             break;
@@ -197,8 +228,19 @@ public class Main extends JFrame
             // render game
             gameState.draw( gfx );
 
+            if ( DEBUG_NODES && highlightedNode != null )
+            {
+                int radius = 12;
+                gfx.setColor(Color.GREEN);
+
+                gfx.fillArc(highlightedNode.x - radius/2,
+                    highlightedNode.y - radius/2, radius, radius, 0,360);
+
+                highlightedNode.visitDirections((dir,exit ) -> exit.draw(gfx));
+            }
+
             // TODO: Debug - draw highlighted line (if any)
-            if ( highlightedLine != null ) {
+            if ( DEBUG_LINES && highlightedLine != null ) {
                 gfx.setColor(Color.GREEN);
                 highlightedLine.draw(gfx);
             }

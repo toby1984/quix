@@ -42,7 +42,7 @@ public class Line
         if ( n == node1 ) {
             return node0;
         }
-        throw new IllegalArgumentException( "Node not assigned to this line: "+n );
+        throw new IllegalArgumentException( "Node "+n+" is no part of line "+this);
     }
     public boolean isEndpoint(int x,int y) {
         return ( this.x0() == x && this.y0() == y ) ||( this.x1() == x && this.y1() == y );
@@ -127,6 +127,25 @@ public class Line
     public boolean hasEndpoint(int x,int y) {
         return ( this.x0() == x && this.y0() == y) ||
                ( this.x1() == x && this.y1() == y);
+    }
+
+    public boolean hasEndpoints(Node n1, Node n2)
+    {
+        if ( node0 == n1 ) {
+            return node1 == n2;
+        }
+        if ( node0 == n2 ) {
+            return node1 == n1;
+        }
+        return false;
+    }
+
+    public boolean hasEndpoint(Node n)
+    {
+        if ( n == null ) {
+            throw new IllegalArgumentException("Node must not be NULL");
+        }
+        return this.node0 == n || this.node1 == n;
     }
 
     @Override
@@ -396,23 +415,24 @@ The last thing to do is check that Xa is included into Ia:
     {
         gfx.drawLine( x0(), y0(), x1(), y1() );
 
-        final int radius = 6;
+        final int radius = 12;
         if ( isAxisParallel() )
         {
             final Color current = gfx.getColor();
             final Node left = isHorizontal() ? leftNode() : topNode();
             if ( left != null )
             {
-                gfx.setColor( Color.GREEN );
-                gfx.fillArc( left.x - radius / 2, left.y - radius / 2, radius, radius, 0, 360 );
+                gfx.setXORMode( Color.BLUE );
+                gfx.drawArc( left.x - radius / 2, left.y - radius / 2, radius, radius, 0, 360 );
             }
 
             final Node right = isHorizontal() ? rightNode() : bottomNode() ;
             if ( right != null )
             {
-                gfx.setColor( Color.RED );
-                gfx.fillArc( right.x - radius / 2, right.y - radius / 2, radius, radius, 0, 360 );
+                gfx.setXORMode( Color.MAGENTA );
+                gfx.drawArc( right.x - radius / 2, right.y - radius / 2, radius, radius, 0, 360 );
             }
+            gfx.setPaintMode();
             gfx.setColor(current);
         }
     }

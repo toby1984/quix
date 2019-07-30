@@ -1,5 +1,7 @@
 package de.codesourcery.quix;
 
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -7,6 +9,7 @@ import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 public class GameState implements ICollisionCheck
 {
@@ -25,10 +28,13 @@ public class GameState implements ICollisionCheck
 
     public boolean gameOver;
 
+    // TODO: Remove debug code
+    private final LineCollection lastPath = new LineCollection();
+
     // hint: player location does NOT take playFieldOffset into consideration
     public Player player = new Player();
 
-    public Difficulty difficulty = new Difficulty( 1 , 4 );
+    public Difficulty difficulty;
 
     public static final int PLAYFIELD_WIDTH = PLAYFIELD_SIZE.width;
     public static final int PLAYFIELD_HEIGHT = PLAYFIELD_SIZE.height;
@@ -39,17 +45,23 @@ public class GameState implements ICollisionCheck
 
     private IncompleteLineCollection currentPoly;
 
-    public GameState() {
+    private final AStar astar = new AStar();
+
+    public GameState()
+    {
         restart();
     }
 
     public void restart()
     {
+        Node.ALL_NODES.clear();
+
+        lastPath.clear();
         gameOver = false;
         enemies.clear();
         playfieldLines.clear();
         currentPoly = null;
-        difficulty = new Difficulty( 1 , 4 );
+        difficulty = new Difficulty( 1 , 0 );
         player = new Player();
         quix = new Quix();
         rnd.setSeed( RANDOM_SEED );
@@ -59,27 +71,26 @@ public class GameState implements ICollisionCheck
         final Node se = new Node( PLAYFIELD_WIDTH, PLAYFIELD_HEIGHT );
         final Node sw = new Node(0, PLAYFIELD_HEIGHT );
 
-        final Line top = new Line(0,0, PLAYFIELD_WIDTH,0);
-        final Line right = new Line( PLAYFIELD_WIDTH,0, PLAYFIELD_WIDTH, PLAYFIELD_HEIGHT );
-        final Line bottom = new Line( PLAYFIELD_WIDTH, PLAYFIELD_HEIGHT,0, PLAYFIELD_HEIGHT );
-        final Line left = new Line(0, PLAYFIELD_HEIGHT,0,0);
+        final Line top = new Line(nw,ne );
+        final Line right = new Line( ne,se );
+        final Line bottom = new Line( se , sw );
+        final Line left = new Line(sw,nw);
 
-        top.setLeftNode( nw );
-        top.setRightNode( ne );
+        nw.right = top;
+        nw.down = left;
 
-        right.setTopNode( ne );
-        right.setBottomNode( se );
+        ne.left = top;
+        ne.down = right;
 
-        bottom.setRightNode( se );
-        bottom.setLeftNode( sw );
+        se.up = right;
+        se.left = bottom;
 
-        left.setBottomNode( sw );
-        left.setTopNode( nw );
+        sw.right = bottom;
+        sw.up = left;
         playfieldLines.addAll( List.of( top,right,bottom,left ) );
 
-        player.x = player.y = 0;
+        player.set(0,0);
         player.setCurrentLine(top);
-
         setupQuix();
 
         for (int i = 0; i < difficulty.enemyCount ; i++ ) {
@@ -122,8 +133,7 @@ public class GameState implements ICollisionCheck
                             return false;
                         case TOUCHED_FOREIGN_LINE:
                             entity.y--;
-                            playfieldLines.addAll( currentPoly.lines );
-                            currentPoly=null;
+                            closePoly();
                             break;
                     }
                 }
@@ -146,6 +156,7 @@ public class GameState implements ICollisionCheck
             if ( topNode != null && topNode.up != null ) {
                 entity.y--;
                 entity.setCurrentLine(topNode.up);
+                return true;
             }
             return false;
         }
@@ -156,9 +167,51 @@ public class GameState implements ICollisionCheck
         if ( node != null && node.up != null ) {
             entity.y--;
             entity.setCurrentLine(node.up);
+            return true;
         }
         return false;
     }
+
+    private void closePoly()
+    {
+//        final List<Integer> path =
+//            astar.findPath(currentPoly.firstNode.id, currentPoly.lastNode.id, mesh, null);
+//
+//        if ( path.size() < 2 ) {
+//            throw new RuntimeException("Internal error, found no path between nodes?");
+//        }
+//
+//        System.out.println("FOUND PATH: " +path.stream().map(Node::get).map(Node::toString).collect(Collectors.joining(" -> ")));
+//
+//        // TODO: Remove debug code
+//        lastPath.clear();
+//        lastPath.addAll( currentPoly.lines );
+//        lastPath.addAll( toLines( path ) );
+//        // TODO: Remove debug code
+
+        playfieldLines.addAll( currentPoly.lines );
+        currentPoly=null;
+    }
+
+    private List<Line> toLines(List<Integer> nodeIds)
+    {
+        final List<Line> result = new ArrayList<>();
+        for ( int ptr = 0 ; ptr < nodeIds.size() ; ptr++ )
+        {
+            final Node current = Node.get( nodeIds.get(ptr) );
+            if ( ptr+1 >= nodeIds.size() ) {
+                break;
+            }
+            final Node next = Node.get( nodeIds.get(ptr+1) );
+            Line currentLine = playfieldLines.findLine(current,next);
+            if ( currentLine == null ) {
+                throw new RuntimeException("Found no line for "+current+" -> "+next);
+            }
+            result.add( currentLine );
+        }
+        return result;
+    }
+
 
     public Mode getMode(Mode wanted) {
         return currentPoly != null ? currentPoly.mode : wanted;
@@ -192,8 +245,7 @@ public class GameState implements ICollisionCheck
                             return false;
                         case TOUCHED_FOREIGN_LINE:
                             entity.y++;
-                            playfieldLines.addAll( currentPoly.lines );
-                            currentPoly=null;
+                            closePoly();
                             break;
                     }
                 }
@@ -262,8 +314,7 @@ public class GameState implements ICollisionCheck
                             return false;
                         case TOUCHED_FOREIGN_LINE:
                             entity.x--;
-                            playfieldLines.addAll( currentPoly.lines );
-                            currentPoly=null;
+                            closePoly();
                             break;
                     }
                 }
@@ -330,8 +381,7 @@ public class GameState implements ICollisionCheck
                             return false;
                         case TOUCHED_FOREIGN_LINE:
                             entity.x++;
-                            playfieldLines.addAll( currentPoly.lines );
-                            currentPoly=null;
+                            closePoly();
                             break;
                     }
                 }
@@ -343,7 +393,6 @@ public class GameState implements ICollisionCheck
         if ( entity.getCurrentLine().isHorizontal() )
         {
             // can only move up if not already at the right-most point
-            System.out.println("Moving right on "+entity.getCurrentLine());
             final int right = entity.getCurrentLine().maxX();
             if ( entity.x < right ) {
                 entity.x++;
@@ -459,6 +508,11 @@ outer:
         currentLine.draw(gfx);
 
         gfx.drawString("Entity @ "+player.x+","+player.y,20,20);
+
+        if ( ! lastPath.isEmpty() ) {
+            gfx.setColor( Color.ORANGE );
+            lastPath.draw( gfx );
+        }
 
         if ( gameOver )
         {
@@ -577,6 +631,30 @@ outer:
         gfx.drawString("Mode: "+getMode(Mode.MOVE),15,15);
     }
 
+    public Node getClosestNode(Vec2 p) {
+
+        Node result = null;
+        float dst2 = 0;
+        for ( Line l : playfieldLines.lines )
+        {
+            float dx = p.x - l.node0.x;
+            float dy = p.y - l.node0.y;
+            float tmp = dx*dx + dy*dy;
+            if ( result == null || tmp < dst2 ) {
+                result = l.node0;
+                dst2 = tmp;
+            }
+            dx = p.x - l.node1.x;
+            dy = p.y - l.node1.y;
+            tmp = dx*dx + dy*dy;
+            if ( tmp < dst2 ) {
+                result = l.node1;
+                dst2 = tmp;
+            }
+        }
+        return result;
+    }
+
     public Line getClosestLine(Vec2 p) {
 
         Line result = null;
@@ -613,4 +691,27 @@ outer:
             p1y += yStep;
         }
     }
+
+    public final NavMesh mesh = new AbstractNavMesh()
+    {
+        @Override
+        public int getNeighbours(int node, IntOpenHashSet visitedNodeIds, int[] result)
+        {
+            Node n = Node.get(node);
+            int count=0;
+            if ( n.up != null && ! currentPoly.containsIdentity(n.up ) ) {
+                result[count++] = n.up.getOther(n).id;
+            }
+            if ( n.down != null && ! currentPoly.containsIdentity(n.down )) {
+                result[count++] = n.down.getOther(n).id;
+            }
+            if ( n.left!= null && ! currentPoly.containsIdentity(n.left )) {
+                result[count++] = n.left.getOther(n).id;
+            }
+            if ( n.right!= null && ! currentPoly.containsIdentity(n.right )) {
+                result[count++] = n.right.getOther(n).id;
+            }
+            return count;
+        }
+    };
 }

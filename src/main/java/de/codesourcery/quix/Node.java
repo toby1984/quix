@@ -1,16 +1,18 @@
 package de.codesourcery.quix;
 
-import java.util.ArrayList;
+import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+
 import java.util.List;
-import java.util.Objects;
-import java.util.function.Predicate;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public class Node
 {
-    private static long ID = 0;
+    private static int ID = 0;
 
-    public final long id=ID++;
+    public final int id=ID++;
     public int x,y;
 
     public Line up;
@@ -18,7 +20,27 @@ public class Node
     public Line right;
     public Line down;
 
+    public static Int2ObjectMap<Node> ALL_NODES =
+        new Int2ObjectArrayMap<>();
+
     public Node() {
+        ALL_NODES.put(id,this);
+    }
+
+    public static Node get(int nodeId) {
+        return ALL_NODES.get( nodeId );
+    }
+
+    public Node(Node other) {
+        this();
+        this.x = other.x;
+        this.y = other.y;
+    }
+
+    public Node(int x, int y)
+    {
+        this();
+        set(x,y);
     }
 
     public Line getExit(Direction dir,Direction ignoredDirection)
@@ -41,16 +63,6 @@ public class Node
         if ( left != null && Direction.LEFT != ignored ) { result++; }
         if ( right != null && Direction.RIGHT != ignored ) { result++; }
         return result;
-    }
-
-    public Node(Node other) {
-        this.x = other.x;
-        this.y = other.y;
-    }
-
-    public Node(int x, int y)
-    {
-        set(x,y);
     }
 
     public Node add(Direction dir) {
@@ -104,6 +116,22 @@ public class Node
             throw new IllegalArgumentException( "Line "+line+" must be vertical" );
         }
         up = line;
+    }
+
+    public void visitDirections(BiConsumer<Direction,Line> visitor)
+    {
+        if ( left != null ) {
+            visitor.accept(Direction.LEFT, left );
+        }
+        if ( right != null ) {
+            visitor.accept(Direction.RIGHT, right );
+        }
+        if ( up != null ) {
+            visitor.accept(Direction.UP, up );
+        }
+        if ( down  != null ) {
+            visitor.accept(Direction.DOWN, down );
+        }
     }
 
     public void setDown(Line line) {
