@@ -13,13 +13,17 @@ public class Line
 {
     private static final float EPSILON = 0.00001f;
 
-    public Node node0;
-    public int x0,y0;
-
-    public Node node1;
-    public int x1,y1;
+    public Node node0 = new Node();
+    public Node node1 = new Node();
 
     public float m;
+
+    public Line(Node n0, Node n1)
+    {
+        this.node0 = n0;
+        this.node1 = n1;
+        updateIntercept();
+    }
 
     public Line(Point p0, Point p1) {
         this(p0.x,p0.y,p1.x,p1.y);
@@ -28,43 +32,48 @@ public class Line
     private Line(Line other) {
         this.node0 = other.node0;
         this.node1 = other.node1;
-        this.x0 = other.x0;
-        this.y0 = other.y0;
-        this.x1 = other.x1;
-        this.y1 = other.y1;
         this.m = other.m;
     }
 
+    public Node getOther(Node n) {
+        if ( n == node0 ) {
+            return node1;
+        }
+        if ( n == node1 ) {
+            return node0;
+        }
+        throw new IllegalArgumentException( "Node not assigned to this line: "+n );
+    }
     public boolean isEndpoint(int x,int y) {
-        return (this.x0 == x && this.y0 == y ) ||(this.x1 == x && this.y1 == y );
+        return ( this.x0() == x && this.y0() == y ) ||( this.x1() == x && this.y1() == y );
     }
 
     public boolean isLeftEndpoint(int x,int y) {
-        if ( x0 < x1 ) {
-            return x0 == x && y0 == y;
+        if ( x0() < x1() ) {
+            return x0() == x && y0() == y;
         }
-        return x1 == x && y1 == y;
+        return x1() == x && y1() == y;
     }
 
     public boolean isRightEndpoint(int x,int y) {
-        if ( x0 > x1 ) {
-            return x0 == x && y0 == y;
+        if ( x0() > x1() ) {
+            return x0() == x && y0() == y;
         }
-        return x1 == x && y1 == y;
+        return x1() == x && y1() == y;
     }
 
     public boolean isTopEndpoint(int x,int y) {
-        if ( y0 < y1 ) {
-            return x0 == x && y0 == y;
+        if ( y0() < y1() ) {
+            return x0() == x && y0() == y;
         }
-        return x1 == x && y1 == y;
+        return x1() == x && y1() == y;
     }
 
     public boolean isBottomEndpoint(int x,int y) {
-        if ( y0 > y1 ) {
-            return x0 == x && y0 == y;
+        if ( y0() > y1() ) {
+            return x0() == x && y0() == y;
         }
-        return x1 == x && y1 == y;
+        return x1() == x && y1() == y;
     }
 
     /**
@@ -81,44 +90,34 @@ public class Line
         set(x0,y0,x1,y1);
     }
 
-    protected void updateIntercept()
+    public Line(int x0, int y0, Node n)
+    {
+        this( new Node(x0,y0) , n );
+    }
+
+    public void updateIntercept()
     {
         if ( ! isVertical() ) // prevent division by zero
         {
-            m = ( y1 - y0 ) / (float) ( x1 - x0 );
+            m = ( y1() - y0() ) / (float) ( x1() - x0() );
         } else {
             m = 0;
         }
     }
 
-    public void setStart(int x0,int y0) {
-        this.x0 = x0;
-        this.y0 = y0;
-        updateIntercept();
-    }
-
-    public void setEnd(int x1,int y1) {
-        this.x1 = x1;
-        this.y1 = y1;
-        updateIntercept();
-    }
-
     public void set(int x0, int y0, int x1, int y1)
     {
-        this.x0 = x0;
-        this.y0 = y0;
-        this.x1 = x1;
-        this.y1 = y1;
-
+        node0.set(x0,y0);
+        node1.set(x1,y1);
         updateIntercept();
     }
 
     public boolean sameStart(Line other) {
-        return this.x0 == other.x0 && this.y0 == other.y0;
+        return this.x0() == other.x0() && this.y0() == other.y0();
     }
 
     public boolean sameEnd(Line other) {
-        return this.x1 == other.x1 && this.y1 == other.y1;
+        return this.x1() == other.x1() && this.y1() == other.y1();
     }
 
     public boolean shareEndpoint(Line other) {
@@ -126,30 +125,30 @@ public class Line
     }
 
     public boolean hasEndpoint(int x,int y) {
-        return (this.x0 == x && this.y0 == y) ||
-               (this.x1 == x && this.y1 == y);
+        return ( this.x0() == x && this.y0() == y) ||
+               ( this.x1() == x && this.y1() == y);
     }
 
     @Override
     public String toString()
     {
         String orientation = isVertical() ? "vertical" : isHorizontal() ? "horizontal" : "";
-        return orientation+" line ("+x0+","+y0+") -> ("+x1+","+y1+"), m = "+m+", node0: "+node0+", node1: "+node1;
+        return orientation+" line ("+ x0() +","+ y0() +") -> ("+ x1() +","+ y1() +"), m = "+m+", node0: "+node0+", node1: "+node1;
     }
 
     public boolean contains(int cx,int cy)
     {
         if ( isVertical() ) {
-            return cx == x0 && cy >= minY() && cy <= maxY();
+            return cx == x0() && cy >= minY() && cy <= maxY();
         } else if ( isHorizontal() ) {
-            return cy == y0 && cx >= minX() && cx <= maxX();
+            return cy == y0() && cx >= minX() && cx <= maxX();
         }
 
-        final int ax = this.x0;
-        final int ay = this.y0;
+        final int ax = this.x0();
+        final int ay = this.y0();
 
-        final int bx = this.x1;
-        final int by = this.y1;
+        final int bx = this.x1();
+        final int by = this.y1();
 
         final float AB = (float) sqrt(( 0 -ay)*( 0 -ay)+( 0 -by)*( 0 -by)+( 0 -cy)*( 0 -cy));
         final float AP = (float) sqrt((ax-ay)*(ax-ay)+(bx-by)*(bx-by)+(cx-cy)*(cx-cy));
@@ -158,30 +157,28 @@ public class Line
     }
 
     public int minX() {
-        return min(x0,x1);
+        return min( x0(), x1() );
     }
 
     public int maxX() {
-        return max(x0,x1);
+        return max( x0(), x1() );
     }
 
     public int minY() {
-        return min(y0,y1);
+        return min( y0(), y1() );
     }
 
     public int maxY() {
-        return max(y0,y1);
+        return max( y0(), y1() );
     }
 
     public void setLeftNode(Node node) {
         if ( ! isHorizontal() ) {
             throw new UnsupportedOperationException( "Must not call setLeftNode() on non-horizontal line " + this );
         }
-        if ( x0 <= x1 ) {
-            node.set( x0,y0 );
+        if ( x0() <= x1() ) {
             this.node0 = node;
         } else {
-            node.set( x1,y1 );
             this.node1 = node;
         }
         node.setRight(this);
@@ -191,14 +188,12 @@ public class Line
         if ( ! isHorizontal() ) {
             throw new UnsupportedOperationException( "Must not call setRightNode() on non-horizontal line " + this );
         }
-        if ( x0 <= x1 )
+        if ( x0() <= x1() )
         {
-            node.set( x1,y1 );
             this.node1 = node;
         }
         else
         {
-            node.set( x0,y0 );
             this.node0 = node;
         }
         node.setLeft(this);
@@ -208,14 +203,12 @@ public class Line
         if ( ! isVertical() ) {
             throw new UnsupportedOperationException( "Must not call setTopNode() on non-vertical line " + this );
         }
-        if ( y0 <= y1 )
+        if ( y0() <= y1() )
         {
-            node.set( x0,y0 );
             this.node0 = node;
         }
         else
         {
-            node.set( x1,y1 );
             this.node1 = node;
         }
         node.setDown(this);
@@ -226,14 +219,12 @@ public class Line
         if ( ! isVertical() ) {
             throw new UnsupportedOperationException( "Must not call setBottomNode() on non-vertical line " + this );
         }
-        if ( y0 <= y1 )
+        if ( y0() <= y1() )
         {
-            node.set( x1,y1 );
             this.node1 = node;
         }
         else
         {
-            node.set( x0,y0 );
             this.node0 = node;
         }
         node.setUp(this);
@@ -244,7 +235,7 @@ public class Line
         if ( ! isHorizontal() ) {
             throw new UnsupportedOperationException( "Must not call leftNode() on non-horizontal line " + this );
         }
-        return x0 < x1 ? node0 : node1;
+        return x0() < x1() ? node0 : node1;
     }
 
     public Node rightNode()
@@ -252,7 +243,7 @@ public class Line
         if ( ! isHorizontal() ) {
             throw new UnsupportedOperationException( "Must not call rightNode() on non-horizontal line " + this );
         }
-        return x0 < x1 ? node1 : node0;
+        return x0() < x1() ? node1 : node0;
     }
 
     public Node topNode()
@@ -260,7 +251,7 @@ public class Line
         if ( ! isVertical() ) {
             throw new UnsupportedOperationException( "Must not call topNode() on non-vertical line " + this );
         }
-        return y0 < y1 ? node0 : node1;
+        return y0() < y1() ? node0 : node1;
     }
 
     public Node bottomNode()
@@ -268,7 +259,7 @@ public class Line
         if ( ! isVertical() ) {
             throw new UnsupportedOperationException( "Must not call bottomNode() on non-vertical line " + this );
         }
-        return y0 < y1 ? node1 : node0;
+        return y0() < y1() ? node1 : node0;
     }
 
     @Override
@@ -277,7 +268,7 @@ public class Line
         if ( obj instanceof Line)
         {
             final Line o = (Line) obj;
-            return obj == this || this.x0 == o.x0 && this.y0 == o.y0 && this.x1 == o.x1 && this.y0 == o.y1;
+            return obj == this || this.x0() == o.x0() && this.y0() == o.y0() && this.x1() == o.x1() && this.y0() == o.y1();
         }
         return false;
     }
@@ -285,20 +276,20 @@ public class Line
     @Override
     public int hashCode()
     {
-        return Objects.hash( x0, y0, x1, y1, m );
+        return Objects.hash( x0(), y0(), x1(), y1(), m );
     }
 
     public boolean intersects(Line other)
     {
-        int thisX0 = this.x0;
-        int thisY0 = this.y0;
-        int thisX1 = this.x1;
-        int thisY1 = this.y1;
+        int thisX0 = this.x0();
+        int thisY0 = this.y0();
+        int thisX1 = this.x1();
+        int thisY1 = this.y1();
 
-        int otherX0 = other.x0;
-        int otherY0 = other.y0;
-        int otherX1 = other.x1;
-        int otherY1 = other.y1;
+        int otherX0 = other.x0();
+        int otherY0 = other.y0();
+        int otherX1 = other.x1();
+        int otherY1 = other.y1();
 
         final boolean thisVertical = isVertical();
         final boolean otherVertical = other.isVertical();
@@ -323,9 +314,9 @@ public class Line
                 vertLine = other;
                 nonVertLine = this;
             }
-            if ( min(nonVertLine.x0, nonVertLine.x1) <= vertLine.x0 && max(nonVertLine.x0,nonVertLine.x1) >= vertLine.x0 ) {
-                return min(nonVertLine.y0,nonVertLine.y1) >= min(vertLine.y0,vertLine.y1) &&
-                max(nonVertLine.y0,nonVertLine.y1) <= max(vertLine.y0,vertLine.y1);
+            if ( min( nonVertLine.x0(), nonVertLine.x1() ) <= vertLine.x0() && max( nonVertLine.x0(), nonVertLine.x1() ) >= vertLine.x0() ) {
+                return min( nonVertLine.y0(), nonVertLine.y1() ) >= min( vertLine.y0(), vertLine.y1() ) &&
+                max( nonVertLine.y0(), nonVertLine.y1() ) <= max( vertLine.y0(), vertLine.y1() );
             }
             return false;
         }
@@ -367,7 +358,7 @@ If the segments are parallel, then A1 == A2 :
         if ( Math.abs( slope1 - slope2 ) < EPSILON )
         {
             // parallel, horizontal lines
-            if ( this.y0 == other.y0 )
+            if ( this.y0() == other.y0() )
             {
                 // check for overlapping X interval
                 return max( thisX0, thisX1 ) >= min( otherX0, otherX1 );
@@ -394,16 +385,16 @@ The last thing to do is check that Xa is included into Ia:
     }
 
     public boolean isHorizontal() {
-        return y0 == y1;
+        return y0() == y1();
     }
 
     public boolean isVertical() {
-        return x0 == x1;
+        return x0() == x1();
     }
 
     public void draw(Graphics2D gfx)
     {
-        gfx.drawLine( x0,y0,x1,y1 );
+        gfx.drawLine( x0(), y0(), x1(), y1() );
 
         final int radius = 6;
         if ( isAxisParallel() )
@@ -427,10 +418,10 @@ The last thing to do is check that Xa is included into Ia:
     }
 
     public Node getNodeForEndpoint(int x,int y) {
-        if (this.x0 == x & this.y0 == y) {
+        if ( this.x0() == x & this.y0() == y) {
             return node0;
         }
-        if (this.x1 == x && this.y1 == y) {
+        if ( this.x1() == x && this.y1() == y) {
             return node1;
         }
         return null;
@@ -439,14 +430,50 @@ The last thing to do is check that Xa is included into Ia:
     public void assertValid() {
 
         if ( node0 != null ) {
-            if ( node0.x != x0 || node0.y != y0 ) {
+            if ( node0.x != x0() || node0.y != y0() ) {
                 throw new IllegalStateException("Line has broken node0: "+this);
             }
         }
         if ( node1 != null ) {
-            if ( node1.x != x1 || node1.y != y1 ) {
+            if ( node1.x != x1() || node1.y != y1() ) {
                 throw new IllegalStateException("Line has broken node1: "+this);
             }
         }
+    }
+
+    public int x0()
+    {
+        return node0.x;
+    }
+
+    public void setX0(int x) {
+        node0.x = x;
+    }
+
+    public int y0()
+    {
+        return node0.y;
+    }
+
+    public void setY0(int y) {
+        node0.y = y;
+    }
+
+    public int x1()
+    {
+        return node1.x;
+    }
+
+    public void setX1(int x) {
+        node1.x = x;
+    }
+
+    public int y1()
+    {
+        return node1.y;
+    }
+
+    public void setY1(int y) {
+        node1.y = y;
     }
 }

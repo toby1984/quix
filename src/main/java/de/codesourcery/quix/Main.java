@@ -52,8 +52,14 @@ public class Main extends JFrame
 
     private void gameLoop()
     {
-        movePlayer();
-        movePlayer();
+        if ( ! gameState.gameOver )
+        {
+            movePlayer();
+        }
+        if ( ! gameState.gameOver )
+        {
+            movePlayer();
+        }
         panel.tick();
     }
 
@@ -88,13 +94,11 @@ public class Main extends JFrame
 
     private final class MyPanel extends JPanel {
 
-        private final Quix quix = new Quix();
-
         public MyPanel(GameState gameState)
         {
             ToolTipManager.sharedInstance().registerComponent( this );
             ToolTipManager.sharedInstance().setDismissDelay( 3000 );
-            setupQuix(gameState);
+
             setFocusable( true );
             addMouseMotionListener( new MouseAdapter()
             {
@@ -142,6 +146,16 @@ public class Main extends JFrame
                 @Override
                 public void keyReleased(KeyEvent e)
                 {
+                    if ( gameState.gameOver )
+                    {
+                        if ( e.getKeyCode() == KeyEvent.VK_SPACE || e.getKeyCode() == KeyEvent.VK_ENTER )
+                        {
+                            gameState.restart();
+                            fastSpeed = false;
+                            up = down = left = right = false;
+                        }
+                        return;
+                    }
                     switch( e.getKeyCode() )
                     {
                         case KeyEvent.VK_SPACE:
@@ -164,55 +178,26 @@ public class Main extends JFrame
             });
         }
 
-        private void setupQuix(GameState gameState)
-        {
-            int p0x=50,p0y=50,p1x=75,p1y=25;
-            int xStep = 5, yStep = 5;
-            for ( int lines = 10 ; lines > 0 ; lines-- )
-            {
-                final QuixLine line = new QuixLine( p0x, p0y, p1x, p1y );
-                line.dx0 = 1;
-                line.dy0 = 1;
-
-                line.dx1 = 1;
-                line.dy1 = 1;
-                quix.add( line );
-
-                p0x += xStep;
-                p0y += xStep;
-
-                p1x += yStep;
-                p1y += yStep;
-            }
-        }
-
         public void tick()
         {
-            quix.tick( gameState );
             repaint();
         }
 
         @Override
         protected void paintComponent(Graphics g)
         {
-            Graphics2D gfx = (Graphics2D) g;
+            final Graphics2D gfx = (Graphics2D) g;
             super.paintComponent( gfx );
 
             gfx.setTransform( AffineTransform.getTranslateInstance( PLAYFIELD_XOFFSET, PLAYFIELD_YOFFSET) );
 
-            // draw quix
-            quix.draw( gfx );
+            // tick game state
+            gameState.tick();
 
-            // draw playing field
+            // render game
             gameState.draw( gfx );
 
-            // draw player
-            final float radius = 6;
-            gfx.setColor( Color.BLUE );
-            gfx.fillArc( gameState.player.x-(int) radius/2,
-                    gameState.player.y - (int) radius/2 , (int) radius, (int) radius, 0,360 );
-
-            // draw highlighted line (if any)
+            // TODO: Debug - draw highlighted line (if any)
             if ( highlightedLine != null ) {
                 gfx.setColor(Color.GREEN);
                 highlightedLine.draw(gfx);

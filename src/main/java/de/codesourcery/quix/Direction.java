@@ -2,10 +2,34 @@ package de.codesourcery.quix;
 
 enum Direction
 {
-    LEFT(-1, 0),
-    RIGHT(1, 0),
-    UP(0, -1),
-    DOWN(0, 1);
+    LEFT(-1, 0) {
+        @Override
+        public Direction opposite()
+        {
+            return RIGHT;
+        }
+    },
+    RIGHT(1, 0) {
+        @Override
+        public Direction opposite()
+        {
+            return LEFT;
+        }
+    },
+    UP(0, -1) {
+        @Override
+        public Direction opposite()
+        {
+            return DOWN;
+        }
+    },
+    DOWN(0, 1) {
+        @Override
+        public Direction opposite()
+        {
+            return UP;
+        }
+    };
 
     public final int dx;
     public final int dy;
@@ -16,19 +40,5 @@ enum Direction
         this.dy = dy;
     }
 
-    public Direction opposite() {
-        switch(this) {
-
-            case LEFT:
-                return RIGHT;
-            case RIGHT:
-                return LEFT;
-            case UP:
-                return DOWN;
-            case DOWN:
-                return UP;
-            default:
-                throw new RuntimeException("Unhandled direction: "+this);
-        }
-    }
+    public abstract Direction opposite();
 }

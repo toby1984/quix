@@ -5,6 +5,7 @@ import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Predicate;
 
 public class LineCollection implements ICollisionCheck
 {
@@ -27,6 +28,10 @@ public class LineCollection implements ICollisionCheck
     public LineCollection(boolean drawFilled)
     {
         this.drawFilled = drawFilled;
+    }
+
+    public void clear() {
+        lines.clear();
     }
 
     @Override
@@ -113,7 +118,7 @@ public class LineCollection implements ICollisionCheck
         if ( ! isEmpty() && drawFilled )
         {
             final Line last = lastLine();
-            if ( last.x1 != line.x0 || last.y1 != line.y0 ) {
+            if ( last.x1() != line.x0() || last.y1() != line.y0() ) {
                 throw new IllegalArgumentException( "Refusing to add line "+line+" that is not connected to "+last );
             }
         }
@@ -159,8 +164,8 @@ public class LineCollection implements ICollisionCheck
             {
                 final Line line = lines.get( i );
                 line.assertValid(); // TODO: Remove debug code
-                x[i] = line.x0;
-                y[i] = line.y0;
+                x[i] = line.x0();
+                y[i] = line.y0();
             }
             gfx.setColor( fillColor );
             gfx.fillPolygon( x,y,x.length );
@@ -188,7 +193,7 @@ public class LineCollection implements ICollisionCheck
         }
         final Line first = firstLine();
         final Line last = lastLine();
-        return last.x1 == first.x0 && last.y1 == first.y0;
+        return last.x1() == first.x0() && last.y1() == first.y0();
     }
 
     @Override
@@ -199,70 +204,46 @@ public class LineCollection implements ICollisionCheck
 
     public static Node splitLine(LineCollection collection,Line line, int xSplit, int ySplit)
     {
-        Node newNode = null;
+        Node middle;
 
         if ( line.isHorizontal() )
         {
             if ( line.isLeftEndpoint(xSplit,ySplit ) ) {
                 return line.leftNode();
-            } else if ( line.isRightEndpoint(xSplit,ySplit ) ) {
+            }
+            if ( line.isRightEndpoint(xSplit,ySplit ) ) {
                 return line.rightNode();
             }
 
             System.out.println("Splitting "+line+"...");
-            newNode = new Node(xSplit,ySplit);
-            final Line rightPart;
-            final Line leftPart;
-            if ( line.x0 < xSplit ) {
-                leftPart = new Line(line.x0,line.y0,xSplit,ySplit);
-                leftPart.setLeftNode( line.leftNode() );
-                collection.add( leftPart );
-                rightPart = line;
-                rightPart.set(xSplit,ySplit,rightPart.x1, rightPart.y1 );
-            } else {
-                // line.x0 >= xSplit
-                rightPart = new Line(xSplit,ySplit,line.x0,line.y0);
-                rightPart.setRightNode( line.rightNode() );
-                collection.add( rightPart );
-                leftPart = line;
-                leftPart.set(leftPart.x1, leftPart.y1, xSplit,ySplit);
-            }
-            System.out.println("into \nleft = "+leftPart+"\nright = "+rightPart+"\n");
-            leftPart.setRightNode( newNode );
-            rightPart.setLeftNode( newNode );
+            middle = new Node(xSplit,ySplit);
+            final Node right = line.rightNode();
+
+            final Line newLine = new Line(middle, right );
+            right.setLeft( newLine );
+            middle.setRight( newLine );
+            line.setRightNode( middle );
+            collection.add( newLine );
+            System.out.println("new line: "+newLine);
         }
         else if ( line.isVertical() )
         {
             if ( line.isTopEndpoint(xSplit,ySplit ) ) {
                 return line.topNode();
-            } else if ( line.isBottomEndpoint(xSplit,ySplit ) ) {
+            }  if ( line.isBottomEndpoint(xSplit,ySplit ) ) {
                 return line.bottomNode();
             }
             System.out.println("Splitting "+line+"...");
-            newNode = new Node(xSplit,ySplit);
-            final Line topPart;
-            final Line bottomPart;
-            if ( line.y0 < ySplit )
-            {
-                topPart = new Line(xSplit,ySplit,line.x0,line.y0);
-                topPart.setTopNode( line.topNode() );
-                collection.add( topPart );
-                bottomPart = line;
-                bottomPart.set(xSplit,ySplit,line.x1,line.y1);
-            } else {
-                // line.y0 >= ySplit
-                bottomPart = new Line(xSplit,ySplit,line.x0,line.y0);
-                bottomPart.setBottomNode( line.bottomNode() );
-                collection.add( bottomPart );
-                topPart = line;
-                topPart.set(line.x1, line.y1, xSplit, ySplit);
-            }
-            System.out.println("into \ntop = "+topPart+"\nbottom = "+bottomPart+"\n");
-            topPart.setBottomNode( newNode );
-            bottomPart.setTopNode( newNode );
+            middle = new Node(xSplit,ySplit);
+            final Node bottom = line.bottomNode();
+            final Line newLine = new Line(middle, bottom);
+            line.setBottomNode( middle );
+            middle.setUp( line );
+            middle.setDown( newLine );
+            collection.add( newLine );
         } else {
             throw new IllegalStateException("Line is neither vertical nor horizontal? "+line);
         }
-        return newNode;
+        return middle;
     }
 }

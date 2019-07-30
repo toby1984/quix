@@ -24,11 +24,11 @@ public class QuixLine extends Line
      */
     public Line tick(ICollisionCheck check)
     {
-        int newX0 = x0 + dx0;
-        int newY0 = y0 + dy0;
+        int newX0 = x0() + dx0;
+        int newY0 = y0() + dy0;
 
-        int newX1 = x1 + dx1;
-        int newY1 = y1 + dy1;
+        int newX1 = x1() + dx1;
+        int newY1 = y1() + dy1;
 
         boolean flipY0=false;
         boolean flipY1=false;
@@ -116,8 +116,8 @@ public class QuixLine extends Line
                 dy0 = -dy0;
             }
         } else {
-            x0 += dx0;
-            y0 += dy0;
+            setX0( x0() + dx0 );
+            setY0( y0() + dy0 );
         }
 
         if ( flipX1 || flipY1 )
@@ -129,8 +129,8 @@ public class QuixLine extends Line
                 dy1 = -dy1;
             }
         } else {
-            x1 += dx1;
-            y1 += dy1;
+            setX1( x1() + dx1 );
+            setY1( y1() + dy1 );
         }
         return result;
     }

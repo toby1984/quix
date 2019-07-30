@@ -19,7 +19,7 @@ public class Quix
 
     public void tick(GameState state)
     {
-        final Difficulty difficulty = state.level;
+        final Difficulty difficulty = state.difficulty;
         // randomize movement periodically
         currentTick++;
         if ( currentTick == randomizationInterval )
@@ -29,7 +29,7 @@ public class Quix
         }
 
         // animate quix
-        for ( int j = state.level.quixSpeed ; j >= 0 ; j-- )
+        for (int j = state.difficulty.quixSpeed; j >= 0 ; j-- )
         {
             for (int i = 0, linesSize = lines.size(); i < linesSize; i++)
             {

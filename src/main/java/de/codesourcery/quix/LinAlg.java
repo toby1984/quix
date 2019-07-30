@@ -29,8 +29,8 @@ public class LinAlg
 
     public static float dist2ToLineSegment(Line line, Vec2 pnt)
     {
-        final Vec2 start= new Vec2(line.x0,line.y0);
-        final Vec2 end = new Vec2(line.x1,line.y1);
+        final Vec2 start= new Vec2( line.x0(), line.y0() );
+        final Vec2 end = new Vec2( line.x1(), line.y1() );
         final Vec2 line_vec = end.subtract( start );
         final Vec2 pnt_vec = pnt.subtract( start );
         final float line_len = line_vec.len();

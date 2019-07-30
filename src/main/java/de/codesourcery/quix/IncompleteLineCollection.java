@@ -1,6 +1,5 @@
 package de.codesourcery.quix;
 
-import java.awt.Color;
 import java.awt.Graphics2D;
 
 public abstract class IncompleteLineCollection extends LineCollection
@@ -11,13 +10,12 @@ public abstract class IncompleteLineCollection extends LineCollection
         TOUCHED_FOREIGN_LINE
     }
 
-    public final Line currentLine;
-    public Direction currentDirection;
+    public DirectedLine currentLine;
 
     public final Mode mode;
     public boolean completed;
 
-    public IncompleteLineCollection(Mode mode,int x,int y,Direction currentDirection,Node newNode)
+    public IncompleteLineCollection(Mode mode, Direction currentDirection, Node newNode)
     {
         if ( currentDirection == null ) {
             throw new IllegalArgumentException("currentDirection cannot be NULL");
@@ -26,21 +24,21 @@ public abstract class IncompleteLineCollection extends LineCollection
             throw new IllegalArgumentException("mode cannot be NULL or Mode.MOVE");
         }
         this.mode = mode;
-        currentLine = new Line(x,y,x,y);
-        this.currentDirection = currentDirection;
-        switch( currentDirection ) {
+        currentLine = new DirectedLine( currentDirection, newNode );
 
+        switch( currentDirection )
+        {
             case LEFT:
-                currentLine.setRightNode(newNode);
+                newNode.setLeft( currentLine );
                 break;
             case RIGHT:
-                currentLine.setLeftNode(newNode);
+                newNode.setRight( currentLine );
                 break;
             case UP:
-                currentLine.setBottomNode(newNode);
+                newNode.setUp( currentLine );
                 break;
             case DOWN:
-                currentLine.setTopNode(newNode);
+                newNode.setDown( currentLine );
                 break;
         }
         currentLineChanged( currentLine );
@@ -51,87 +49,28 @@ public abstract class IncompleteLineCollection extends LineCollection
         if ( completed ) {
             throw new IllegalStateException("Already completed");
         }
-
-        if ( newDirection == currentDirection.opposite() ) {
+        if ( newDirection == currentLine.direction.opposite() ) {
             return MoveResult.CANT_MOVE;
         }
 
-        int x0 = currentLine.x1;
-        int y0 = currentLine.y1;
-        int x1 = currentLine.x1+newDirection.dx;
-        int y1 = currentLine.y1+newDirection.dy;
+        int x1 = currentLine.x1() +newDirection.dx;
+        int y1 = currentLine.y1() +newDirection.dy;
 
         Line line = check.getLine(x1,y1);
         if ( line == null )
         {
             // we can move
-            if ( newDirection == currentDirection)
+            if ( newDirection == currentLine.direction )
             {
                 // we keep moving in the same direction
-                currentLine.setEnd(x1, y1);
+                currentLine.move();
             }
             else
             {
                 // we changed direction, complete the current line segment and
                 // initialize a new one
-                final Line previousLine = currentLine.shallowCopy();
-                add( previousLine );
-                currentLine.set( x0,y0,x1,y1);
-                currentLine.node0 = currentLine.node1 = null;
-                final Node newNode = new Node(x0,y0);
-                final Direction previousDirection = currentDirection;
-                currentDirection = newDirection;
-                switch(newDirection)
-                {
-                    case LEFT: // we're now moving left;
-                        switch( previousDirection )
-                        {
-                            case UP:
-                                previousLine.setTopNode( newNode );
-                                break;
-                            case DOWN:
-                                previousLine.setBottomNode( newNode );
-                                break;
-                        }
-                        currentLine.setRightNode( newNode );
-                        break;
-                    case RIGHT:
-                        switch( previousDirection )
-                        {
-                            case UP:
-                                previousLine.setTopNode( newNode );
-                                break;
-                            case DOWN:
-                                previousLine.setBottomNode( newNode );
-                                break;
-                        }
-                        currentLine.setLeftNode( newNode );
-                        break;
-                    case UP:
-                        switch( previousDirection )
-                        {
-                            case LEFT:
-                                previousLine.setLeftNode( newNode );
-                                break;
-                            case RIGHT:
-                                previousLine.setRightNode( newNode );
-                                break;
-                        }
-                        currentLine.setBottomNode( newNode );
-                        break;
-                    case DOWN:
-                        switch( previousDirection )
-                        {
-                            case LEFT:
-                                previousLine.setLeftNode( newNode );
-                                break;
-                            case RIGHT:
-                                previousLine.setRightNode( newNode );
-                                break;
-                        }
-                        currentLine.setTopNode( newNode );
-                        break;
-                }
+                add( currentLine );
+                currentLine = currentLine.changeDirection( newDirection );
             }
             return MoveResult.MOVED;
         }
@@ -147,9 +86,7 @@ public abstract class IncompleteLineCollection extends LineCollection
         add( currentLine );
 
         final Node newNode = check.split(line, x1, y1);
-        currentLine.x1 = x1;
-        currentLine.y1 = y1;
-        switch( currentDirection )
+        switch( currentLine.direction )
         {
             case LEFT:
                 currentLine.setLeftNode(newNode);
