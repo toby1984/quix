@@ -56,72 +56,16 @@ public class Main extends JFrame
 
     private void gameLoop()
     {
+        final Mode mode = fastSpeed ? Mode.LINE_FAST : Mode.MOVE;
         if ( ! gameState.gameOver )
         {
-            movePlayer();
+            gameState.movePlayer(left,right,up,down,mode );
         }
         if ( ! gameState.gameOver )
         {
-            movePlayer();
+            gameState.movePlayer(left,right,up,down,mode );
         }
         panel.tick();
-    }
-
-    private void movePlayer()
-    {
-        final Mode mode = gameState.getMode( fastSpeed ? Mode.LINE_FAST : Mode.MOVE );
-        final Direction leftRight = left ? Direction.LEFT : Direction.RIGHT;
-        final Direction upDown = up ? Direction.UP : Direction.DOWN;
-
-        boolean canMoveSideways = false;
-        boolean canMoveUpDown = false;
-
-        if ( left || right )
-        {
-            canMoveSideways = gameState.move(gameState.player, leftRight, mode, false);
-        }
-        if ( up || down )
-        {
-            canMoveUpDown = gameState.move(gameState.player, upDown, mode, false);
-        }
-        Direction newDir = null;
-        if ( ! gameState.isDrawingPoly() && gameState.player.previousMovement != null && ( left || right) && ( up || down ) )
-        {
-            // user tries to move left (or right) and up (or down) at the same time
-            if ( gameState.player.previousMovement.isVerticalMovement() ) {
-                // previously moved up or down
-                if ( canMoveSideways ) {
-                    newDir = leftRight;
-                } else if ( canMoveUpDown ){
-                    newDir = upDown;
-                }
-            } else if ( gameState.player.previousMovement.isHorizontalMovement() ) {
-                // previously moved left or right
-                if ( canMoveUpDown ){
-                    newDir = upDown;
-                } else if ( canMoveSideways ) {
-                    newDir = leftRight;
-                }
-            } else {
-                throw new RuntimeException("Unreachable code reached");
-            }
-        }
-        else
-        {
-            // move in one direction only
-            if ( left || right )
-            {
-                newDir = canMoveSideways ? leftRight : null;
-            } else if ( up || down )
-            {
-                newDir = canMoveUpDown ? upDown : null;
-            }
-        }
-        if ( newDir != null )
-        {
-            gameState.move(gameState.player, newDir, mode, true);
-            gameState.player.previousMovement = newDir;
-        }
     }
 
     public static void main(String[] args) throws InvocationTargetException, InterruptedException

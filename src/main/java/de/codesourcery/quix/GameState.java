@@ -543,4 +543,61 @@ outer:
             return count;
         }
     };
+
+    public void movePlayer(boolean left, boolean right, boolean up, boolean down, Mode desiredMode)
+    {
+        final Mode mode = getMode( desiredMode );
+        final Direction leftRight = left ? Direction.LEFT : Direction.RIGHT;
+        final Direction upDown = up ? Direction.UP : Direction.DOWN;
+
+        boolean canMoveSideways = false;
+        boolean canMoveUpDown = false;
+
+        if ( left || right )
+        {
+            canMoveSideways = move(player, leftRight, mode, false);
+        }
+        if ( up || down )
+        {
+            canMoveUpDown = move(player, upDown, mode, false);
+        }
+        Direction newDir = null;
+        if ( ! isDrawingPoly() && player.previousMovement != null && ( left || right) && ( up || down ) )
+        {
+            // user tries to move left (or right) and up (or down) at the same time
+            if ( player.previousMovement.isVerticalMovement() ) {
+                // previously moved up or down
+                if ( canMoveSideways ) {
+                    newDir = leftRight;
+                } else if ( canMoveUpDown ){
+                    newDir = upDown;
+                }
+            } else if ( player.previousMovement.isHorizontalMovement() ) {
+                // previously moved left or right
+                if ( canMoveUpDown ){
+                    newDir = upDown;
+                } else if ( canMoveSideways ) {
+                    newDir = leftRight;
+                }
+            } else {
+                throw new RuntimeException("Unreachable code reached");
+            }
+        }
+        else
+        {
+            // move in one direction only
+            if ( left || right )
+            {
+                newDir = canMoveSideways ? leftRight : null;
+            } else if ( up || down )
+            {
+                newDir = canMoveUpDown ? upDown : null;
+            }
+        }
+        if ( newDir != null )
+        {
+            move(player, newDir, mode, true);
+            player.previousMovement = newDir;
+        }
+    }
 }
