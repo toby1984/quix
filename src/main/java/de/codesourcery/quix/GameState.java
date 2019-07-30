@@ -9,7 +9,6 @@ import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
 
 public class GameState implements ICollisionCheck
 {
@@ -98,42 +97,67 @@ public class GameState implements ICollisionCheck
         }
     }
 
-    /**
-     * Determine how many pixels an entity could move upwards at its current location.
-     *
-     * @param entity
-     * @return <code>true</code> if entity could move
-     */
-    public boolean moveUp(Entity entity,Mode mode)
+    public boolean isDrawingPoly() {
+        return currentPoly != null;
+    }
+
+    public boolean move(Entity entity,Direction direction, Mode mode,boolean applyChanges)
     {
         if ( mode == Mode.LINE_FAST )
         {
-            if ( entity.y > 0 )
+            final boolean canMove;
+            switch( direction ) {
+                case LEFT:
+                    canMove = entity.x > 0;
+                    break;
+                case RIGHT:
+                    canMove = entity.x < PLAYFIELD_WIDTH;
+                    break;
+                case UP:
+                    canMove = entity.y > 0;
+                    break;
+                case DOWN:
+                    canMove = entity.y < PLAYFIELD_HEIGHT;
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + direction);
+            }
+            if ( canMove )
             {
                 if ( this.currentPoly == null )
                 {
-                    // TODO: Check whether there's free space below us...
-                    Node newNode = playfieldLines.split(entity.getCurrentLine(),entity.x, entity.y );
-                    currentPoly = new IncompleteLineCollection( mode, Direction.UP, newNode) {
-
-                        @Override
-                        protected void currentLineChanged(Line line)
+                    // TODO: Check whether there's free BEFORE splitting the line...
+                    if ( applyChanges )
+                    {
+                        Node newNode = playfieldLines.split(entity.getCurrentLine(), entity.x, entity.y);
+                        currentPoly = new IncompleteLineCollection(mode, direction, newNode)
                         {
-                            entity.setCurrentLine(line);
-                        }
-                    };
-                    entity.y--;
+
+                            @Override
+                            protected void currentLineChanged(Line line)
+                            {
+                                entity.setCurrentLine(line);
+                            }
+                        };
+                        entity.move(direction);
+                    }
                 } else {
-                    switch( currentPoly.tryMove(Direction.UP,this) )
+                    switch( currentPoly.tryMove(direction,this, applyChanges) )
                     {
                         case MOVED:
-                            entity.y--;
+                            if ( applyChanges )
+                            {
+                                entity.move(direction);
+                            }
                             break;
                         case CANT_MOVE:
                             return false;
                         case TOUCHED_FOREIGN_LINE:
-                            entity.y--;
-                            closePoly();
+                            if ( applyChanges )
+                            {
+                                entity.move(direction);
+                                closePoly();
+                            }
                             break;
                     }
                 }
@@ -142,31 +166,39 @@ public class GameState implements ICollisionCheck
             return false;
         }
 
-        if ( entity.getCurrentLine().isVertical() )
+        // check whether we're at the end of the current line
+        final Node nodeForEndpoint = entity.getCurrentLine().getNodeForEndpoint(entity.x, entity.y);
+        if ( nodeForEndpoint != null )
         {
-            // can only move up if not already at the top
-            final int top = entity.getCurrentLine().minY();
-            if ( entity.y > top) {
-                entity.y--;
-                return true;
-            }
-            // we're at the top, check whether there's a node
-            // here that also has an UP line
-            final Node topNode = entity.getCurrentLine().topNode();
-            if ( topNode != null && topNode.up != null ) {
-                entity.y--;
-                entity.setCurrentLine(topNode.up);
+            // we're at the end of the current line, check whether we can
+            // continue moving in the current direction
+            final Line exit = nodeForEndpoint.getExit(direction, null);
+            if ( exit != null ) {
+                if ( applyChanges )
+                {
+                    entity.move(direction);
+                    entity.setCurrentLine(exit);
+                }
                 return true;
             }
             return false;
         }
-        // not on a vertical line, can only move up if the
-        // current location is also a graph node that
-        // has an UP line
-        final Node node = entity.getCurrentLine().getNodeForEndpoint( entity.x, entity.y );
-        if ( node != null && node.up != null ) {
-            entity.y--;
-            entity.setCurrentLine(node.up);
+
+        // check whether the user is trying to move along the current line
+        if ( entity.getCurrentLine().isHorizontal() && ( direction == Direction.LEFT || direction == Direction.RIGHT ) )
+        {
+            if ( applyChanges )
+            {
+                entity.move(direction);
+            }
+            return true;
+        }
+        if ( entity.getCurrentLine().isVertical() && ( direction == Direction.UP || direction == Direction.DOWN ) )
+        {
+            if ( applyChanges )
+            {
+                entity.move(direction);
+            }
             return true;
         }
         return false;
@@ -215,209 +247,6 @@ public class GameState implements ICollisionCheck
 
     public Mode getMode(Mode wanted) {
         return currentPoly != null ? currentPoly.mode : wanted;
-    }
-
-    public boolean moveDown(Entity entity, Mode mode)
-    {
-        if ( mode == Mode.LINE_FAST )
-        {
-            if ( entity.y < PLAYFIELD_HEIGHT )
-            {
-                if ( this.currentPoly == null )
-                {
-                    // TODO: Check whether there's free space below us...
-                    Node newNode = playfieldLines.split(entity.getCurrentLine(),entity.x, entity.y );
-                    currentPoly = new IncompleteLineCollection( mode, Direction.DOWN, newNode) {
-                        @Override
-                        protected void currentLineChanged(Line line)
-                        {
-                            entity.setCurrentLine(line);
-                        }
-                    };
-                    entity.y++;
-                } else {
-                    switch( currentPoly.tryMove(Direction.DOWN,this) )
-                    {
-                        case MOVED:
-                            entity.y++;
-                            break;
-                        case CANT_MOVE:
-                            return false;
-                        case TOUCHED_FOREIGN_LINE:
-                            entity.y++;
-                            closePoly();
-                            break;
-                    }
-                }
-                return true;
-            }
-            return false;
-        }
-
-        if ( entity.getCurrentLine().isVertical() )
-        {
-            // can only move up if not already at the top
-            final int bottom = entity.getCurrentLine().maxY();
-            if ( entity.y < bottom ) {
-                entity.y++;
-                return true;
-            }
-            // we're at the bottom, check whether there's a node
-            // here that also has a DOWN line
-            final Node bottomNode = entity.getCurrentLine().bottomNode();
-            if ( bottomNode != null && bottomNode.down != null )
-            {
-                entity.y++;
-                entity.setCurrentLine(bottomNode.down);
-                return true;
-            }
-            return false;
-        }
-        // not on a vertical line, can only move down if the
-        // current location is also a graph node that
-        // has a DOWN line
-        final Node node = entity.getCurrentLine().getNodeForEndpoint( entity.x, entity.y );
-        if ( node != null && node.down != null ) {
-            entity.y++;
-            entity.setCurrentLine(node.down);
-            return true;
-        }
-        return false;
-    }
-
-    public boolean moveLeft(Entity entity, Mode mode)
-    {
-        if ( mode == Mode.LINE_FAST )
-        {
-            if ( entity.x > 0 )
-            {
-                if ( this.currentPoly == null )
-                {
-                    // TODO: Check whether there's free space below us...
-                    Node newNode = playfieldLines.split(entity.getCurrentLine(),entity.x, entity.y );
-                    currentPoly = new IncompleteLineCollection( mode, Direction.LEFT, newNode) {
-
-                        @Override
-                        protected void currentLineChanged(Line line)
-                        {
-                            entity.setCurrentLine(line);
-                        }
-                    };
-                    entity.x--;
-                } else {
-                    switch( currentPoly.tryMove(Direction.LEFT,this) )
-                    {
-                        case MOVED:
-                            entity.x--;
-                            break;
-                        case CANT_MOVE:
-                            return false;
-                        case TOUCHED_FOREIGN_LINE:
-                            entity.x--;
-                            closePoly();
-                            break;
-                    }
-                }
-                return true;
-            }
-            return false;
-        }
-
-        if ( entity.getCurrentLine().isHorizontal() )
-        {
-            // can only move up if not already at the left-most point
-            final int left = entity.getCurrentLine().minX();
-            if ( entity.x > left ) {
-                entity.x--;
-                return true;
-            }
-            // we're at the left-mode point, check whether there's a node
-            // here that also has a LEFT line
-            final Node leftNode = entity.getCurrentLine().leftNode();
-            if ( leftNode != null && leftNode.left != null ) {
-                entity.x--;
-                entity.setCurrentLine(leftNode.left);
-                return true;
-            }
-        }
-        // not on a horizontal line, can only move left if the
-        // current location is also a graph node that
-        // has a LEFT line
-        final Node node = entity.getCurrentLine().getNodeForEndpoint( entity.x, entity.y );
-        if ( node != null && node.left != null ) {
-            entity.x--;
-            entity.setCurrentLine(node.left);
-            return true;
-        }
-        return false;
-    }
-
-    public boolean moveRight(Entity entity, Mode mode)
-    {
-        if ( mode == Mode.LINE_FAST )
-        {
-            if ( entity.x < PLAYFIELD_WIDTH )
-            {
-                if ( this.currentPoly == null )
-                {
-                    // TODO: Check whether there's free space below us...
-                    Node newNode = playfieldLines.split(entity.getCurrentLine(),entity.x, entity.y );
-                    currentPoly = new IncompleteLineCollection( mode, Direction.RIGHT, newNode) {
-
-                        @Override
-                        protected void currentLineChanged(Line line)
-                        {
-                            entity.setCurrentLine(line);
-                        }
-                    };
-                    entity.x++;
-                } else {
-                    switch( currentPoly.tryMove(Direction.RIGHT,this) )
-                    {
-                        case MOVED:
-                            entity.x++;
-                            break;
-                        case CANT_MOVE:
-                            return false;
-                        case TOUCHED_FOREIGN_LINE:
-                            entity.x++;
-                            closePoly();
-                            break;
-                    }
-                }
-                return true;
-            }
-            return false;
-        }
-
-        if ( entity.getCurrentLine().isHorizontal() )
-        {
-            // can only move up if not already at the right-most point
-            final int right = entity.getCurrentLine().maxX();
-            if ( entity.x < right ) {
-                entity.x++;
-                return true;
-            }
-            // we're at the right-most point, check whether there's a node
-            // here that also has a RIGHT line
-            final Node rightNode = entity.getCurrentLine().rightNode();
-            if ( rightNode != null && rightNode.right != null ) {
-                entity.x++;
-                entity.setCurrentLine(rightNode.right);
-                return true;
-            }
-            return false;
-        }
-        // not on a horizontal line, can only move right if the
-        // current location is also a graph node that
-        // has a RIGHT line
-        final Node node = entity.getCurrentLine().getNodeForEndpoint( entity.x, entity.y );
-        if ( node != null && node.right != null ) {
-            entity.x++;
-            entity.setCurrentLine(node.right);
-            return true;
-        }
-        return false;
     }
 
     @Override

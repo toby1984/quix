@@ -4,6 +4,8 @@ public class Player extends Entity
 {
     public int score;
 
+    public Direction previousMovement;
+
     @Override
     public String toString()
     {

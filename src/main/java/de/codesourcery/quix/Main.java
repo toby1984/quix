@@ -16,7 +16,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.lang.reflect.InvocationTargetException;
-import java.util.function.BiConsumer;
 
 public class Main extends JFrame
 {
@@ -68,28 +67,61 @@ public class Main extends JFrame
         panel.tick();
     }
 
-    private boolean movePlayer()
+    private void movePlayer()
     {
         final Mode mode = gameState.getMode( fastSpeed ? Mode.LINE_FAST : Mode.MOVE );
+        final Direction leftRight = left ? Direction.LEFT : Direction.RIGHT;
+        final Direction upDown = up ? Direction.UP : Direction.DOWN;
+
+        boolean canMoveSideways = false;
+        boolean canMoveUpDown = false;
+
         if ( left || right )
         {
-            return tryLeftRight(mode) || tryUpDown(mode);
+            canMoveSideways = gameState.move(gameState.player, leftRight, mode, false);
         }
-        else if ( up || down )
+        if ( up || down )
         {
-            return tryUpDown(mode) || tryLeftRight(mode);
+            canMoveUpDown = gameState.move(gameState.player, upDown, mode, false);
         }
-        return false;
-    }
-
-    private boolean tryUpDown(Mode mode)
-    {
-        return up && gameState.moveUp(gameState.player, mode) || down && gameState.moveDown(gameState.player, mode);
-    }
-
-    private boolean tryLeftRight(Mode mode)
-    {
-        return left && gameState.moveLeft(gameState.player, mode) || right && gameState.moveRight(gameState.player, mode);
+        Direction newDir = null;
+        if ( ! gameState.isDrawingPoly() && gameState.player.previousMovement != null && ( left || right) && ( up || down ) )
+        {
+            // user tries to move left (or right) and up (or down) at the same time
+            if ( gameState.player.previousMovement.isVerticalMovement() ) {
+                // previously moved up or down
+                if ( canMoveSideways ) {
+                    newDir = leftRight;
+                } else if ( canMoveUpDown ){
+                    newDir = upDown;
+                }
+            } else if ( gameState.player.previousMovement.isHorizontalMovement() ) {
+                // previously moved left or right
+                if ( canMoveUpDown ){
+                    newDir = upDown;
+                } else if ( canMoveSideways ) {
+                    newDir = leftRight;
+                }
+            } else {
+                throw new RuntimeException("Unreachable code reached");
+            }
+        }
+        else
+        {
+            // move in one direction only
+            if ( left || right )
+            {
+                newDir = canMoveSideways ? leftRight : null;
+            } else if ( up || down )
+            {
+                newDir = canMoveUpDown ? upDown : null;
+            }
+        }
+        if ( newDir != null )
+        {
+            gameState.move(gameState.player, newDir, mode, true);
+            gameState.player.previousMovement = newDir;
+        }
     }
 
     public static void main(String[] args) throws InvocationTargetException, InterruptedException

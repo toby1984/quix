@@ -41,4 +41,12 @@ enum Direction
     }
 
     public abstract Direction opposite();
+
+    public boolean isHorizontalMovement() {
+        return dx != 0;
+    }
+
+    public boolean isVerticalMovement() {
+        return dy != 0;
+    }
 }

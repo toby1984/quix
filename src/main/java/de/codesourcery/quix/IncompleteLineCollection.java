@@ -47,7 +47,7 @@ public abstract class IncompleteLineCollection extends LineCollection
         currentLineChanged( currentLine );
     }
 
-    public MoveResult tryMove(Direction newDirection,ICollisionCheck check)
+    public MoveResult tryMove(Direction newDirection,ICollisionCheck check,boolean applyChanges)
     {
         if ( lastNode != null ) {
             throw new IllegalStateException("Already completed");
@@ -56,24 +56,27 @@ public abstract class IncompleteLineCollection extends LineCollection
             return MoveResult.CANT_MOVE;
         }
 
-        int x1 = currentLine.x1() +newDirection.dx;
-        int y1 = currentLine.y1() +newDirection.dy;
+        int x1 = currentLine.x1() + newDirection.dx;
+        int y1 = currentLine.y1() + newDirection.dy;
 
         Line line = check.getLine(x1,y1);
         if ( line == null )
         {
-            // we can move
-            if ( newDirection == currentLine.direction )
+            if (applyChanges)
             {
-                // we keep moving in the same direction
-                currentLine.move();
-            }
-            else
-            {
-                // we changed direction, complete the current line segment and
-                // initialize a new one
-                add( currentLine );
-                currentLine = currentLine.changeDirection( newDirection );
+                // we can move
+                if (newDirection == currentLine.direction)
+                {
+                    // we keep moving in the same direction
+                    currentLine.move();
+                }
+                else
+                {
+                    // we changed direction, complete the current line segment and
+                    // initialize a new one
+                    add(currentLine);
+                    currentLine = currentLine.changeDirection(newDirection);
+                }
             }
             return MoveResult.MOVED;
         }
@@ -85,28 +88,31 @@ public abstract class IncompleteLineCollection extends LineCollection
         // we hit a line but it's none of our own
         // -> split the line, inserting a new node here
 
-        add( currentLine );
-
-        final Node newNode = check.split(line, x1, y1);
-        lastNode = newNode;
-
-        switch( currentLine.direction )
+        if ( applyChanges )
         {
-            case LEFT:
-                currentLine.setLeftNode(newNode);
-                break;
-            case RIGHT:
-                currentLine.setRightNode(newNode);
-                break;
-            case UP:
-                currentLine.setTopNode(newNode);
-                break;
-            case DOWN:
-                currentLine.setBottomNode(newNode);
-                break;
+            add(currentLine);
+
+            final Node newNode = check.split(line, x1, y1);
+            lastNode = newNode;
+
+            switch (currentLine.direction)
+            {
+                case LEFT:
+                    currentLine.setLeftNode(newNode);
+                    break;
+                case RIGHT:
+                    currentLine.setRightNode(newNode);
+                    break;
+                case UP:
+                    currentLine.setTopNode(newNode);
+                    break;
+                case DOWN:
+                    currentLine.setBottomNode(newNode);
+                    break;
+            }
+            System.out.println("*** Touched foreign line ***");
+            currentLineChanged(line);
         }
-        System.out.println("*** Touched foreign line ***");
-        currentLineChanged(line);
         return MoveResult.TOUCHED_FOREIGN_LINE;
     }
 
