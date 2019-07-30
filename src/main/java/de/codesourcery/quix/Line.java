@@ -121,7 +121,7 @@ public class Line
     }
 
     public boolean shareEndpoint(Line other) {
-        return sameStart( other ) || sameEnd( other );
+        return (this.hasEndpoint(other.node0) || this.hasEndpoint(other.node1));
     }
 
     public boolean hasEndpoint(int x,int y) {

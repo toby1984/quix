@@ -65,6 +65,10 @@ public class Main extends JFrame
         {
             gameState.movePlayer(left,right,up,down,mode );
         }
+
+        // tick game state
+        gameState.tick();
+
         panel.tick();
     }
 
@@ -197,9 +201,6 @@ public class Main extends JFrame
             super.paintComponent( gfx );
 
             gfx.setTransform( AffineTransform.getTranslateInstance( PLAYFIELD_XOFFSET, PLAYFIELD_YOFFSET) );
-
-            // tick game state
-            gameState.tick();
 
             // render game
             gameState.draw( gfx );

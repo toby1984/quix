@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -11,23 +12,12 @@ public class LineCollection implements ICollisionCheck
 {
     protected final Line tmp = new Line(0,0,0,0);
 
-    public final List<Line> lines = new ArrayList<>();
+    public List<Line> lines = new ArrayList<>();
 
     public Color lineColor = Color.WHITE;
-    public Color fillColor = Color.RED;
-    public boolean drawFilled = false;
-
-    // bounding box
-    int xmin,xmax;
-    int ymin,ymax;
 
     public LineCollection()
     {
-    }
-
-    public LineCollection(boolean drawFilled)
-    {
-        this.drawFilled = drawFilled;
     }
 
     public Line findLine(Node n0, Node n1)
@@ -128,85 +118,21 @@ public class LineCollection implements ICollisionCheck
 
     public void add(Line line)
     {
-        if ( ! isEmpty() && drawFilled )
-        {
-            final Line last = lastLine();
-            if ( last.x1() != line.x0() || last.y1() != line.y0() ) {
-                throw new IllegalArgumentException( "Refusing to add line "+line+" that is not connected to "+last );
-            }
-        }
         this.lines.add(line);
-
-        if ( lines.size() == 3 )
-        {
-            final Line line1 = lines.get( 0 );
-            final Line line2 = lines.get( 1 );
-            final Line line3 = lines.get( 2 );
-
-            xmin = Math.min( line1.minX(), Math.min( line2.minX(), line3.minX() ) );
-            xmax = Math.min( line1.maxX(), Math.max( line2.maxX(), line3.maxX() ) );
-
-            ymin = Math.min( line1.minY(), Math.min( line2.minY(), line3.minY() ) );
-            ymax = Math.min( line1.maxY(), Math.max( line2.maxY(), line3.maxY() ) );
-        }
-        else if ( lines.size() > 3 )
-        {
-            xmin = Math.min( xmin, line.minX() );
-            xmax = Math.max( xmax, line.maxX() );
-
-            ymin = Math.min( ymin, line.minY() );
-            ymax = Math.max( ymax, line.maxY() );
-        }
-    }
-
-    public Line firstLine() {
-        return lines.get(0);
-    }
-
-    public Line lastLine() {
-        return lines.get( lines.size() - 1 );
     }
 
     public void draw(Graphics2D gfx)
     {
-        if ( isClosedPolygon() )
+        gfx.setColor( lineColor );
+        for ( Line l : lines )
         {
-            final int[] x = new int[lines.size()];
-            final int[] y = new int[lines.size()];
-            for (int i = 0, linesSize = lines.size(); i < linesSize; i++)
-            {
-                final Line line = lines.get( i );
-                line.assertValid(); // TODO: Remove debug code
-                x[i] = line.x0();
-                y[i] = line.y0();
-            }
-            gfx.setColor( fillColor );
-            gfx.fillPolygon( x,y,x.length );
-            gfx.setColor( lineColor );
-            gfx.drawPolygon( x,y,x.length);
-        } else {
-            gfx.setColor( lineColor );
-            for ( Line l : lines )
-            {
-                l.assertValid(); // TODO: Remove debug code
-                l.draw( gfx );
-            }
+            l.assertValid(); // TODO: Remove debug code
+            l.draw( gfx );
         }
     }
 
     public boolean isEmpty() {
         return lines.isEmpty();
-    }
-
-    public boolean isClosedPolygon() {
-
-        if ( isEmpty() )
-        {
-            return false;
-        }
-        final Line first = firstLine();
-        final Line last = lastLine();
-        return last.x1() == first.x0() && last.y1() == first.y0();
     }
 
     @Override
