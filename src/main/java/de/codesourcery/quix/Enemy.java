@@ -6,6 +6,7 @@
 {
     public static long ID=0;
 
+    public boolean outOfBounds;
     public Direction direction;
     public final long id = ID++;
 
@@ -27,6 +28,7 @@
         }
         move( direction );
         if ( x < 0 || y < 0 || x > GameState.PLAYFIELD_WIDTH || y > GameState.PLAYFIELD_HEIGHT ) {
+            this.outOfBounds = true;
             throw new IllegalStateException("Entity out of bounds: "+this);
         }
     }

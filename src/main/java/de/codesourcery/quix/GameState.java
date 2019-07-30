@@ -436,7 +436,10 @@ outer:
                     gameOver = true;
                     break outer;
                 }
-                enemy.tick( this );
+                if ( ! enemy.outOfBounds )
+                {
+                    enemy.tick( this );
+                }
             }
         }
     }
