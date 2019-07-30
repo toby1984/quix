@@ -9,6 +9,7 @@ import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 public class GameState implements ICollisionCheck
 {
@@ -48,6 +49,7 @@ public class GameState implements ICollisionCheck
 
     public GameState()
     {
+        lastPath.lineColor = Color.ORANGE;
         restart();
     }
 
@@ -206,20 +208,20 @@ public class GameState implements ICollisionCheck
 
     private void closePoly()
     {
-//        final List<Integer> path =
-//            astar.findPath(currentPoly.firstNode.id, currentPoly.lastNode.id, mesh, null);
-//
-//        if ( path.size() < 2 ) {
-//            throw new RuntimeException("Internal error, found no path between nodes?");
-//        }
-//
-//        System.out.println("FOUND PATH: " +path.stream().map(Node::get).map(Node::toString).collect(Collectors.joining(" -> ")));
-//
-//        // TODO: Remove debug code
-//        lastPath.clear();
-//        lastPath.addAll( currentPoly.lines );
-//        lastPath.addAll( toLines( path ) );
-//        // TODO: Remove debug code
+        final List<Integer> path =
+            astar.findPath(currentPoly.firstNode.id, currentPoly.lastNode.id, mesh, null);
+
+        if ( path.size() < 2 ) {
+            throw new RuntimeException("Internal error, found no path between nodes?");
+        }
+
+        System.out.println("FOUND PATH: " +path.stream().map(Node::get).map(Node::toString).collect(Collectors.joining(" -> ")));
+
+        // TODO: Remove debug code
+        lastPath.clear();
+        lastPath.addAll( currentPoly.lines );
+        lastPath.addAll( toLines( path ) );
+        // TODO: Remove debug code
 
         playfieldLines.addAll( currentPoly.lines );
         currentPoly=null;

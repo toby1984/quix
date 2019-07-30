@@ -22,7 +22,7 @@ public class Main extends JFrame
     private static final int PLAYFIELD_XOFFSET = 10;
     private static final int PLAYFIELD_YOFFSET = 10;
 
-    public static final boolean DEBUG_NODES = true;
+    public static final boolean DEBUG_NODES = false;
     public static final boolean DEBUG_LINES = false;
 
     private final GameState gameState = new GameState();
