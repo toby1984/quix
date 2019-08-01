@@ -25,6 +25,46 @@ public class Line
         updateIntercept();
     }
 
+    public Line shrink()
+    {
+        final Vec2 a = node0.toVec2();
+        final Vec2 b = node1.toVec2();
+        final Line result = new Line(node0.copy(),node1.copy());
+        if ( result.isHorizontal() ) {
+            result.leftNode().x++;
+            result.rightNode().x--;
+        } else if ( result.isVertical() ) {
+            result.topNode().y++;
+            result.bottomNode().y--;
+        } else {
+            Vec2 dirAB = b.copy().subtract( a );
+            Vec2 dirBA = a.copy().subtract( b );
+
+            Vec2 newA = new Vec2();
+            Vec2 newB =  new Vec2();
+
+            while( true )
+            {
+                dirAB = dirAB.scl( 0.99f );
+                dirBA = dirBA.scl( 0.99f );
+
+                newB.set(a).add( dirAB );
+                newA.set(b).add( dirBA );
+
+                int dxa = Math.abs( (int) newA.x - (int) a.x );
+                int dya = Math.abs( (int) newA.y - (int) a.y );
+                int dxb = Math.abs( (int) newB.x - (int) b.x );
+                int dyb = Math.abs( (int) newB.x - (int) b.x );
+
+                if ( dxa >= 1 && dya >= 1 & dxb >= 1 && dyb != 1 ) {
+                    break;
+                }
+            }
+            result.node0.set( newA );
+            result.node1.set( newB );
+        }
+        return result;
+    }
     public Line(Point p0, Point p1) {
         this(p0.x,p0.y,p1.x,p1.y);
     }

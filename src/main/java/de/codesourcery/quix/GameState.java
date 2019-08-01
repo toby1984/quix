@@ -7,6 +7,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -30,6 +31,8 @@ public class GameState implements ICollisionCheck
 
     // TODO: Remove debug code
     private final LineCollection lastPath = new LineCollection();
+
+    private List<Poly> polys = new ArrayList<>();
 
     // hint: player location does NOT take playFieldOffset into consideration
     public Player player = new Player();
@@ -220,7 +223,12 @@ public class GameState implements ICollisionCheck
         // TODO: Remove debug code
         lastPath.clear();
         lastPath.addAll( currentPoly.lines );
-        lastPath.addAll( toLines( path ) );
+        final List<Line> searchPath = toLines( path );
+        Collections.reverse(searchPath);
+        lastPath.addAll( searchPath );
+
+        polys = lastPath.toPolygon().triangulate();
+
         // TODO: Remove debug code
 
         playfieldLines.addAll( currentPoly.lines );
@@ -343,6 +351,13 @@ outer:
         if ( ! lastPath.isEmpty() ) {
             gfx.setColor( Color.ORANGE );
             lastPath.draw( gfx );
+        }
+
+        if ( ! polys.isEmpty() ) {
+            gfx.setColor( Color.BLACK );
+            for ( Poly p : polys ) {
+                p.draw( gfx );
+            }
         }
 
         if ( gameOver )

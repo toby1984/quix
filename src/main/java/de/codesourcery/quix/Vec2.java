@@ -8,6 +8,25 @@ public class Vec2
     {
     }
 
+    public Vec2(Node node) {
+        this(node.x,node.y);
+    }
+
+    public Vec2(Vec2 vec2)
+    {
+        this.x = vec2.x;
+        this.y = vec2.y;
+    }
+
+    public Vec2 copy() {
+        return new Vec2(this);
+    }
+
+    public void apply(Node n) {
+        n.x = (int) x;
+        n.y = (int) y;
+    }
+
     public Vec2(float x, float y)
     {
         this.x = x;
@@ -28,7 +47,9 @@ public class Vec2
     }
 
     public Vec2 subtract(Vec2 b) {
-        return new Vec2(this.x - b.x, this.y -b.y );
+        this.x -= b.x;
+        this.y -= b.y;
+        return this;
     }
 
     public Vec2 norm() {
@@ -37,7 +58,9 @@ public class Vec2
             return new Vec2(x,y);
         }
         final float len = (float) Math.sqrt( len2 );
-        return new Vec2( x / len, y / len );
+        this.x /= len;
+        this.y /= len;
+        return this;
     }
 
     public float dist2(Vec2 p1)
@@ -53,16 +76,27 @@ public class Vec2
     }
 
     public Vec2 scl(float factor) {
-        return new Vec2(x*factor, y*factor );
+        this.x *= factor;
+        this.y *= factor;
+        return this;
     }
 
     public Vec2 add(Vec2 other) {
-        return new Vec2(this.x +other.x, this.y + other.y );
+        this.x += other.x;
+        this.y += other.y;
+        return this;
     }
 
-    public void set(int x, int y)
+    public Vec2 set(int x, int y)
     {
         this.x = x;
         this.y = y;
+        return this;
+    }
+
+    public Vec2 set(Vec2 other) {
+        this.x = other.x;
+        this.y = other.y;
+        return this;
     }
 }

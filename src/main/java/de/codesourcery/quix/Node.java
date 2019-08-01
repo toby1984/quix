@@ -4,7 +4,11 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -27,6 +31,14 @@ public class Node
         ALL_NODES.put(id,this);
     }
 
+    public static Node of(int x,int y) {
+        return new Node(x,y);
+    }
+
+    public Vec2 toVec2() {
+        return new Vec2(this);
+    }
+
     public static Node get(int nodeId) {
         return ALL_NODES.get( nodeId );
     }
@@ -37,10 +49,23 @@ public class Node
         this.y = other.y;
     }
 
+    public Node copy() {
+        return new Node(this);
+    }
+
+    public boolean matches(Node other) {
+        return this.x == other.x && this.y == other.y;
+    }
+
     public Node(int x, int y)
     {
         this();
         set(x,y);
+    }
+
+    public void set(Vec2 v) {
+        this.x = (int) v.x;
+        this.y = (int) v.y;
     }
 
     public Line getExit(Direction dir,Direction ignoredDirection)
@@ -68,6 +93,12 @@ public class Node
     public Node add(Direction dir) {
         this.x += dir.dx;
         this.y += dir.dy;
+        return this;
+    }
+
+    public Node add(Node other) {
+        this.x+=other.x;
+        this.y+=other.y;
         return this;
     }
 
@@ -154,5 +185,19 @@ public class Node
         final String directions = List.of( hasLeft?"LEFT":"", hasRight?"RIGHT":"",
                 hasUp?"UP":"", hasDown?"DOWN":"").stream().filter( x -> x.length()>0 ).collect( Collectors.joining(","));
         return "Node[ "+id+" , ("+x+","+y+") ] = {"+directions+"}";
+    }
+
+    public float angleInDegrees(Node other)
+    {
+        int dx = other.x - this.x;
+        int dy = other.y - this.y;
+        float angle = (float) Math.toDegrees(Math.atan2(dy, dx));
+        return angle < 0 ? angle + 360 : angle;
+    }
+
+      public Node divideBy(int value) {
+        x /= value;
+        y /= value;
+        return this;
     }
 }

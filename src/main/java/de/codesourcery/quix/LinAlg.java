@@ -31,11 +31,11 @@ public class LinAlg
     {
         final Vec2 start= new Vec2( line.x0(), line.y0() );
         final Vec2 end = new Vec2( line.x1(), line.y1() );
-        final Vec2 line_vec = end.subtract( start );
-        final Vec2 pnt_vec = pnt.subtract( start );
+        final Vec2 line_vec = end.copy().subtract( start );
+        final Vec2 pnt_vec = pnt.copy().subtract( start );
         final float line_len = line_vec.len();
-        final Vec2 line_unitvec = line_vec.norm();
-        final Vec2 pnt_vec_scaled = pnt_vec.scl( 1.0f / line_len );
+        final Vec2 line_unitvec = line_vec.copy().norm();
+        final Vec2 pnt_vec_scaled = pnt_vec.copy().scl( 1.0f / line_len );
         float t = line_unitvec.dot( pnt_vec_scaled );
         if ( t < 0.0 )
         {

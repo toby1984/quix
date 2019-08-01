@@ -4,9 +4,9 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.Map;
 
 public class LineCollection implements ICollisionCheck
 {
@@ -170,8 +170,8 @@ public class LineCollection implements ICollisionCheck
             if ( line.isTopEndpoint(xSplit,ySplit ) ) {
                 return line.topNode();
             }  if ( line.isBottomEndpoint(xSplit,ySplit ) ) {
-                return line.bottomNode();
-            }
+            return line.bottomNode();
+        }
             System.out.println("Splitting "+line+"...");
             middle = new Node(xSplit,ySplit);
             final Node bottom = line.bottomNode();
@@ -184,5 +184,72 @@ public class LineCollection implements ICollisionCheck
             throw new IllegalStateException("Line is neither vertical nor horizontal? "+line);
         }
         return middle;
+    }
+
+    public Poly toPolygon() {
+
+        if ( lines.size() < 3 ) {
+            throw new IllegalStateException("Less than 3 lines, cannot convert to a polygon");
+        }
+        // make sure each line is connected to the next
+        Line first = lines.get( 0 );
+        Line last = lines.get( lines.size() -1 );
+
+        if (! last.shareEndpoint( first ) ) {
+            lines.forEach( l -> System.err.println( l ) );
+            throw new IllegalStateException( "Lines do not form a closed loop" );
+        }
+
+        for ( int i = 1 ; i < lines.size() ; i++) {
+            Line previous  = lines.get( i-1 );
+            Line current = lines.get( i );
+            if (! previous.shareEndpoint( current ) ) {
+                throw new IllegalStateException( "Lines do not form a closed loop" );
+            }
+        }
+
+        final Poly poly = new Poly();
+        final Map<Integer,Node> vertices = new HashMap<>();
+
+        // clone vertices and find geometric center
+        // for sorting points
+        final Node center = new Node(0,0);
+        int count = 0;
+
+        for ( Line l : lines ) {
+            Node vertex1 = vertices.get( l.node0.id );
+            if ( vertex1 == null ) {
+                vertex1 = new Node( l.node0.x, l.node0.y );
+                vertices.put( l.node0.id, vertex1 );
+                poly.vertices.add( vertex1 );
+                count++;
+                center.add( vertex1 );
+            }
+            Node vertex2 = vertices.get( l.node1.id );
+            if ( vertex2 == null ) {
+                vertex2 = new Node( l.node1.x, l.node1.y );
+                vertices.put( l.node1.id, vertex2 );
+                poly.vertices.add( vertex2 );
+                count++;
+                center.add( vertex2 );
+            }
+        }
+        center.divideBy( count );
+
+        // sort clock-wise
+        poly.vertices.sort( (a,b) -> {
+            float ang0 = center.angleInDegrees( a );
+            float ang1 = center.angleInDegrees( b );
+            return Float.compare( ang0, ang1 );
+        });
+
+        // add edges
+        for ( int i = 0, len = poly.vertices.size() ; i< len ; i++ )
+        {
+            Node a = poly.vertices.get(i);
+            Node b = (i+1) < len ? poly.vertices.get(i+1) : poly.vertices.get(0);
+            poly.edges.add( new Line(a,b) );
+        }
+        return poly;
     }
 }
