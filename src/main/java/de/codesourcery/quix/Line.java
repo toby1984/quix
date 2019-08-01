@@ -3,7 +3,9 @@ package de.codesourcery.quix;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -65,6 +67,13 @@ public class Line
         }
         return result;
     }
+
+    public void swapEndpoints() {
+        Node tmp = node0;
+        node0 = node1;
+        node1 = tmp;
+    }
+
     public Line(Point p0, Point p1) {
         this(p0.x,p0.y,p1.x,p1.y);
     }
@@ -193,6 +202,14 @@ public class Line
     {
         String orientation = isVertical() ? "vertical" : isHorizontal() ? "horizontal" : "";
         return orientation+" line ("+ x0() +","+ y0() +") -> ("+ x1() +","+ y1() +"), m = "+m+", node0: "+node0+", node1: "+node1;
+    }
+
+    public String toShortString() {
+        return "#"+node0.id+" ("+node0.x+","+node0.y+") -> #"+node1.id+"("+node1.x+","+node1.y+")";
+    }
+
+    public static String toShortString(List<Line> list) {
+        return list.stream().map( x -> x.toShortString() ).collect(Collectors.joining("\n"));
     }
 
     public boolean contains(int cx,int cy)

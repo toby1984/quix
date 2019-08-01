@@ -1,7 +1,5 @@
     package de.codesourcery.quix;
 
-    import java.util.function.Predicate;
-
     public class Enemy extends Entity
 {
     public static long ID=0;

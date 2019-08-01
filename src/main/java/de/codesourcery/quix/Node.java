@@ -2,13 +2,8 @@ package de.codesourcery.quix;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -192,7 +187,9 @@ public class Node
         int dx = other.x - this.x;
         int dy = other.y - this.y;
         float angle = (float) Math.toDegrees(Math.atan2(dy, dx));
-        return angle < 0 ? angle + 360 : angle;
+        angle = angle < 0 ? angle + 360 : angle;
+        System.out.println("ANGLE "+angle+" for ("+x+","+y+") -> ("+other.x+","+other.y+")");
+        return angle;
     }
 
       public Node divideBy(int value) {

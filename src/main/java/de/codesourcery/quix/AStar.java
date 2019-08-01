@@ -1,6 +1,5 @@
 package de.codesourcery.quix;
 
-import de.codesourcery.quix.NavMesh;
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 

@@ -21,7 +21,6 @@ import java.util.List;
 
 public class TriangulateTest extends JFrame
 {
-
     private static final boolean TEST_POLY_CONTAINS = false;
 
     private static final boolean DRAW_OUTLINE_FIRST = true;

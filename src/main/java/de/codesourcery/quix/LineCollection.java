@@ -4,9 +4,8 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 public class LineCollection implements ICollisionCheck
 {
@@ -15,6 +14,7 @@ public class LineCollection implements ICollisionCheck
     public List<Line> lines = new ArrayList<>();
 
     public Color lineColor = Color.WHITE;
+    public Color fillColor = Color.WHITE;
 
     public LineCollection()
     {
@@ -121,14 +121,37 @@ public class LineCollection implements ICollisionCheck
         this.lines.add(line);
     }
 
-    public void draw(Graphics2D gfx)
+    public void draw(Graphics2D gfx,boolean fillIfPossible)
     {
+        if ( fillIfPossible && Poly.isValidPolygon(this.lines) )
+        {
+            gfx.setColor( fillColor );
+
+            final int x[] = new int[lines.size()];
+            final int y[] = new int[lines.size()];
+            int ptr = 0;
+            Node first = lines.get(0).node0;
+            x[ptr] = first.x;
+            y[ptr++] = first.y;
+
+            for (int i = 1, linesSize = lines.size(); i < linesSize; i++)
+            {
+                final Node p = lines.get(i).node0;
+                x[ptr]=p.x;
+                x[ptr++]=p.y;
+            }
+            gfx.fillPolygon(x,y,x.length);
+        }
         gfx.setColor( lineColor );
         for ( Line l : lines )
         {
             l.assertValid(); // TODO: Remove debug code
             l.draw( gfx );
         }
+    }
+    public void draw(Graphics2D gfx)
+    {
+        draw(gfx,false);
     }
 
     public boolean isEmpty() {
@@ -191,65 +214,88 @@ public class LineCollection implements ICollisionCheck
         if ( lines.size() < 3 ) {
             throw new IllegalStateException("Less than 3 lines, cannot convert to a polygon");
         }
-        // make sure each line is connected to the next
-        Line first = lines.get( 0 );
-        Line last = lines.get( lines.size() -1 );
+        System.out.println("toPolygon(): \n"+Line.toShortString(lines));
 
-        if (! last.shareEndpoint( first ) ) {
-            lines.forEach( l -> System.err.println( l ) );
-            throw new IllegalStateException( "Lines do not form a closed loop" );
-        }
+        // swap line endpoints if necessary
+        // so that for each line node0 is node1 of the
+        // previous line
+        final List<Node> nodeList = new ArrayList<>();
+        nodeList.add( lines.get(0).node0.copy() );
+        Node previous = lines.get(0).node1;
 
-        for ( int i = 1 ; i < lines.size() ; i++) {
-            Line previous  = lines.get( i-1 );
-            Line current = lines.get( i );
-            if (! previous.shareEndpoint( current ) ) {
-                throw new IllegalStateException( "Lines do not form a closed loop" );
-            }
-        }
+        Node center = lines.get(0).node0.copy();
 
-        final Poly poly = new Poly();
-        final Map<Integer,Node> vertices = new HashMap<>();
-
-        // clone vertices and find geometric center
-        // for sorting points
-        final Node center = new Node(0,0);
-        int count = 0;
-
-        for ( Line l : lines ) {
-            Node vertex1 = vertices.get( l.node0.id );
-            if ( vertex1 == null ) {
-                vertex1 = new Node( l.node0.x, l.node0.y );
-                vertices.put( l.node0.id, vertex1 );
-                poly.vertices.add( vertex1 );
-                count++;
-                center.add( vertex1 );
-            }
-            Node vertex2 = vertices.get( l.node1.id );
-            if ( vertex2 == null ) {
-                vertex2 = new Node( l.node1.x, l.node1.y );
-                vertices.put( l.node1.id, vertex2 );
-                poly.vertices.add( vertex2 );
-                count++;
-                center.add( vertex2 );
-            }
-        }
-        center.divideBy( count );
-
-        // sort clock-wise
-        poly.vertices.sort( (a,b) -> {
-            float ang0 = center.angleInDegrees( a );
-            float ang1 = center.angleInDegrees( b );
-            return Float.compare( ang0, ang1 );
-        });
-
-        // add edges
-        for ( int i = 0, len = poly.vertices.size() ; i< len ; i++ )
+        for (int i = 1, linesSize = lines.size(); i < linesSize; i++)
         {
-            Node a = poly.vertices.get(i);
-            Node b = (i+1) < len ? poly.vertices.get(i+1) : poly.vertices.get(0);
-            poly.edges.add( new Line(a,b) );
+            Line l = lines.get(i);
+            if ( l.node0 != previous ) {
+                l.swapEndpoints();
+            }
+            nodeList.add( l.node0 );
+            center.add( l.node0 );
+            previous = l.node1;
         }
+
+        // sort clock-wise around center point
+        center.divideBy(lines.size() );
+
+        nodeList.sort( (a,b) -> -cmp(a,b,center) );
+
+        center.divideBy( lines.size() );
+        System.out.println("Center: "+center);
+
+        // setup polygon
+        final Poly poly = new Poly();
+        for ( int i = 1, len = nodeList.size() ; i< len ; i++ ) {
+            poly.add( new Line(nodeList.get(i-1),nodeList.get(i)) );
+        }
+        poly.add(new Line(nodeList.get(nodeList.size() - 1), nodeList.get(0)));
+        Poly.assertValidPolygon(poly.edges);
         return poly;
+    }
+
+    private int cmp(Node a, Node b, Node center)
+    {
+        if ( a.matches(b) ) {
+            return 0;
+        }
+        // a.x >= center.x && b.x < center.x
+        if (a.x - center.x >= 0 && b.x - center.x < 0)
+        {
+            return -1;
+        }
+        // a.x < center.x && b.x >= center.x
+        if (a.x - center.x < 0 && b.x - center.x >= 0)
+        {
+            return 1;
+        }
+
+        // a.x == center.x && b.x == center.x
+        if (a.x - center.x == 0 && b.x - center.x == 0)
+        {
+            // a.y >= center.y || b.y >= center.y
+            if (a.y - center.y >= 0 || b.y - center.y >= 0)
+            {
+                return a.y > b.y ? -1 : 1;
+            }
+            return b.y > a.y ? -1 : 1;
+        }
+
+        // compute the cross product of vectors (center -> a) x (center -> b)
+        int det = (a.x - center.x) * (b.y - center.y) - (b.x - center.x) * (a.y - center.y);
+        if (det < 0)
+        {
+            return -1;
+        }
+        if (det > 0)
+        {
+            return 1;
+        }
+
+        // points a and b are on the same line from the center
+        // check which point is closer to the center
+        int d1 = (a.x - center.x) * (a.x - center.x) + (a.y - center.y) * (a.y - center.y);
+        int d2 = (b.x - center.x) * (b.x - center.x) + (b.y - center.y) * (b.y - center.y);
+        return d1 > d2 ? -1 : 1;
     }
 }

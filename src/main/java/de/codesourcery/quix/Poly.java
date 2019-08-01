@@ -52,16 +52,19 @@ public class Poly
 
     public List<Poly> triangulate()
     {
-        final List<Poly> result = new ArrayList<>();
         if ( edges.size() < 3 ) {
             throw new UnsupportedOperationException( "Need at least 3 edges" );
         }
+
+        System.out.println("TRIANGULATE: \n" + Line.toShortString(edges));
+
+        final List<Poly> result = new ArrayList<>();
         List<Line> tmp = new ArrayList<>(this.edges);
         // find and remove 'ear'
 outer:
         while(true)
         {
-            assertContinuous(tmp);
+            assertValidPolygon(tmp);
 
             for (int i = 0; i < tmp.size() && tmp.size() > 3; i++)
             {
@@ -88,20 +91,29 @@ outer:
                         final Poly poly = new Poly().add( e1 ).add( e2 ).add( e3 );
                         System.out.println("NEW TRIANGLE: "+poly);
                         result.add( poly );
-                        tmp.remove( i );
-                        tmp.remove( i );
-                        tmp.add( i, e3 );
+                        if ( (i+1) < tmp.size() )
+                        {
+                            tmp.remove(i);
+                            tmp.remove(i);
+                            tmp.add(i, e3);
+                        } else {
+                            // special case: replace first & last line
+                            tmp.remove(i);
+                            tmp.remove(0);
+                            tmp.add(e3);
+                        }
                         continue outer;
                     }
                 }
             }
             if ( tmp.size() > 3 ) {
                 tmp.forEach( l -> System.err.println( l ) );
-                throw new IllegalStateException("Failed to remove any ear?");
+                throw new IllegalStateException("Failed to remove any ear but still lines remaining\n\n"+
+                                                   Line.toShortString(tmp));
             }
             break;
         }
-        assertContinuous(tmp);
+        assertValidPolygon(tmp);
         if ( tmp.size() == 3 )
         {
             final LineCollection col = new LineCollection();
@@ -208,23 +220,38 @@ outer:
         return new Rectangle( xmin, ymin, w, h );
     }
 
-    public static void assertContinuous(List<Line> tmp)
+    public static void assertValidPolygon(List<Line> tmp)
     {
-        if ( tmp.size() < 3 ) {
-            throw new IllegalArgumentException("Need at least 3 lines");
+        if ( ! isValidPolygon(tmp ) ) {
+            throw new IllegalStateException("Not a closed polygon with at least 3 points:\n\n"+Line.toShortString(tmp));
         }
-        Node first = tmp.get(0).node0;
-        Node previous = tmp.get(0).node1;
-        for (int i = 1; i < tmp.size() ; i++)
+    }
+
+    /**
+     * Checks whether a set of lines forms a closed polygon and
+     * each of the lines is connected to it's predecessor.
+     *
+     * @param lines
+     * @return
+     */
+    public static boolean isValidPolygon(List<Line> lines)
+    {
+        if ( lines.size() < 3 ) {
+            return false;
+        }
+        Node first = lines.get(0).node0;
+        Node previous = lines.get(0).node1;
+        for (int i = 1; i < lines.size() ; i++)
         {
-            Line line = tmp.get(i);
+            Line line = lines.get(i);
             if ( line.node0 != previous ) {
-                throw new IllegalStateException("Polygon not continuous?");
+                return false;
             }
             previous = line.node1;
         }
-        if ( tmp.get( tmp.size()-1 ).node1 != first ) {
-            throw new IllegalStateException("Polygon not continuous?");
+        if ( lines.get( lines.size()-1 ).node1 != first ) {
+            return false;
         }
+        return true;
     }
 }
