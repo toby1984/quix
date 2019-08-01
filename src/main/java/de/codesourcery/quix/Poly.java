@@ -59,8 +59,10 @@ public class Poly
         List<Line> tmp = new ArrayList<>(this.edges);
         // find and remove 'ear'
 outer:
-        while( tmp.size() > 3 )
+        while(true)
         {
+            assertContinuous(tmp);
+
             for (int i = 0; i < tmp.size() && tmp.size() > 3; i++)
             {
                 final Line e1 = tmp.get( i );
@@ -97,13 +99,15 @@ outer:
                 tmp.forEach( l -> System.err.println( l ) );
                 throw new IllegalStateException("Failed to remove any ear?");
             }
+            break;
         }
-//        if ( tmp.size() == 3 )
-//        {
-//            final LineCollection col = new LineCollection();
-//            col.addAll( tmp );
-//            result.add( col.toPolygon() );
-//        }
+        assertContinuous(tmp);
+        if ( tmp.size() == 3 )
+        {
+            final LineCollection col = new LineCollection();
+            col.addAll( tmp );
+            result.add( col.toPolygon() );
+        }
         return result;
     }
 
@@ -202,5 +206,25 @@ outer:
             throw new IllegalStateException("BB side negative ?");
         }
         return new Rectangle( xmin, ymin, w, h );
+    }
+
+    public static void assertContinuous(List<Line> tmp)
+    {
+        if ( tmp.size() < 3 ) {
+            throw new IllegalArgumentException("Need at least 3 lines");
+        }
+        Node first = tmp.get(0).node0;
+        Node previous = tmp.get(0).node1;
+        for (int i = 1; i < tmp.size() ; i++)
+        {
+            Line line = tmp.get(i);
+            if ( line.node0 != previous ) {
+                throw new IllegalStateException("Polygon not continuous?");
+            }
+            previous = line.node1;
+        }
+        if ( tmp.get( tmp.size()-1 ).node1 != first ) {
+            throw new IllegalStateException("Polygon not continuous?");
+        }
     }
 }
