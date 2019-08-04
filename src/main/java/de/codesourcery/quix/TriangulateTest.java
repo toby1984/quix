@@ -23,6 +23,8 @@ public class TriangulateTest extends JFrame
 {
     private static final boolean TEST_POLY_CONTAINS = false;
 
+    private static final boolean DRAW_NODES = true;
+
     private static final boolean DRAW_OUTLINE_FIRST = true;
     private static final boolean DRAW_POLYS = true;
     private static final boolean DRAW_OUTLINE = true;
@@ -121,6 +123,20 @@ public class TriangulateTest extends JFrame
                     {
                         if ( e.getKeyCode() == KeyEvent.VK_T )
                         {
+                            /*
+#2 (206,51) -> #3(336,207)
+#3 (336,207) -> #4(421,130)
+#4 (421,130) -> #5(420,299)
+#5 (420,299) -> #6(185,239)
+#6 (185,239) -> #2(206,51)
+Center: Node[ 2 , (62,37) ] = {}
+TRIANGULATE:
+Node[ 6 , (185,239) ] = {}
+Node[ 17 , (206,51) ] = {}
+Node[ 4 , (421,130) ] = {}
+Node[ 3 , (336,207) ] = {}
+Node[ 5 , (420,299) ] = {}
+                             */
                             Node p0 = Node.of(206,51);
                             Node p1 = Node.of(336,207);
                             Node p2 = Node.of(421,130);
@@ -135,6 +151,7 @@ public class TriangulateTest extends JFrame
                             lines.add( new Line(p3,p4 ) );
                             lines.add( new Line(p4,p0 ) );
 
+                            System.out.println( "SETUP: \n" + Line.toShortString( lines.lines ) );
                             firstPoint = p0;
                             previousPoint = p4;
                             triangulate();
@@ -237,7 +254,7 @@ public class TriangulateTest extends JFrame
                     int radius = 12;
                     g.fillArc( firstPoint.x-radius/2,firstPoint.y-radius/2,radius,radius,0,360 );
                 }
-                lines.draw( (Graphics2D) g, true );
+                lines.draw( (Graphics2D) g, true, DRAW_NODES );
             }
         };
 

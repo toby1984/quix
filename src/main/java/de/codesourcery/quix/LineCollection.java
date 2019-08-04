@@ -121,7 +121,11 @@ public class LineCollection implements ICollisionCheck
         this.lines.add(line);
     }
 
-    public void draw(Graphics2D gfx,boolean fillIfPossible)
+    public void draw(Graphics2D gfx,boolean fillIfPossible) {
+        draw(gfx,fillIfPossible,false);
+    }
+
+    public void draw(Graphics2D gfx,boolean fillIfPossible,boolean drawNodes)
     {
         if ( fillIfPossible && Poly.isValidPolygon(this.lines) )
         {
@@ -142,7 +146,7 @@ public class LineCollection implements ICollisionCheck
         for ( Line l : lines )
         {
             l.assertValid(); // TODO: Remove debug code
-            l.draw( gfx );
+            l.draw( gfx, drawNodes );
         }
     }
     public void draw(Graphics2D gfx)
@@ -212,14 +216,13 @@ public class LineCollection implements ICollisionCheck
         }
         System.out.println("toPolygon(): \n"+Line.toShortString(lines));
 
+
         // swap line endpoints if necessary
         // so that for each line node0 is node1 of the
         // previous line
         final List<Node> nodeList = new ArrayList<>();
         nodeList.add( lines.get(0).node0.copy() );
         Node previous = lines.get(0).node1;
-
-        Node center = lines.get(0).node0.copy();
 
         for (int i = 1, linesSize = lines.size(); i < linesSize; i++)
         {
@@ -228,17 +231,8 @@ public class LineCollection implements ICollisionCheck
                 l.swapEndpoints();
             }
             nodeList.add( l.node0 );
-            center.add( l.node0 );
             previous = l.node1;
         }
-
-        // sort clock-wise around center point
-        center.divideBy(lines.size() );
-
-        nodeList.sort( (a,b) -> -cmp(a,b,center) );
-
-        center.divideBy( lines.size() );
-        System.out.println("Center: "+center);
 
         // setup polygon
         final Poly poly = new Poly();
@@ -248,50 +242,5 @@ public class LineCollection implements ICollisionCheck
         poly.add(new Line(nodeList.get(nodeList.size() - 1), nodeList.get(0)));
         Poly.assertValidPolygon(poly.edges);
         return poly;
-    }
-
-    private int cmp(Node a, Node b, Node center)
-    {
-        if ( a.matches(b) ) {
-            return 0;
-        }
-        // a.x >= center.x && b.x < center.x
-        if (a.x - center.x >= 0 && b.x - center.x < 0)
-        {
-            return -1;
-        }
-        // a.x < center.x && b.x >= center.x
-        if (a.x - center.x < 0 && b.x - center.x >= 0)
-        {
-            return 1;
-        }
-
-        // a.x == center.x && b.x == center.x
-        if (a.x - center.x == 0 && b.x - center.x == 0)
-        {
-            // a.y >= center.y || b.y >= center.y
-            if (a.y - center.y >= 0 || b.y - center.y >= 0)
-            {
-                return a.y > b.y ? -1 : 1;
-            }
-            return b.y > a.y ? -1 : 1;
-        }
-
-        // compute the cross product of vectors (center -> a) x (center -> b)
-        int det = (a.x - center.x) * (b.y - center.y) - (b.x - center.x) * (a.y - center.y);
-        if (det < 0)
-        {
-            return -1;
-        }
-        if (det > 0)
-        {
-            return 1;
-        }
-
-        // points a and b are on the same line from the center
-        // check which point is closer to the center
-        int d1 = (a.x - center.x) * (a.x - center.x) + (a.y - center.y) * (a.y - center.y);
-        int d2 = (b.x - center.x) * (b.x - center.x) + (b.y - center.y) * (b.y - center.y);
-        return d1 > d2 ? -1 : 1;
     }
 }

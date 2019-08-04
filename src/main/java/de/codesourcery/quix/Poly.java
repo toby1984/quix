@@ -56,71 +56,101 @@ public class Poly
             throw new UnsupportedOperationException( "Need at least 3 edges" );
         }
 
-        System.out.println("TRIANGULATE: \n" + Line.toShortString(edges));
+        List<Node> nodes = Poly.getPoints( edges );
+        System.out.println("TRIANGULATE:");
+        nodes.forEach(  n -> System.out.println( n ) );
 
         final List<Poly> result = new ArrayList<>();
-        List<Line> tmp = new ArrayList<>(this.edges);
-        // find and remove 'ear'
+        if ( ! triangulateClockwise( nodes, result ) )
+        {
+            if ( ! triangulateCounterClockwise( nodes, result ) ) {
+                throw new RuntimeException("triangulation failed");
+            }
+        }
+        if ( nodes.size() == 3 )
+        {
+            final Node p0 = nodes.get(0);
+            final Node p1 = nodes.get(1);
+            final Node p2 = nodes.get(2);
+            final Poly poly = new Poly()
+                    .add( new Line(p0,p1))
+                    .add( new Line(p1,p2) )
+                    .add( new Line(p2,p0) );
+            result.add( poly );
+        }
+        return result;
+    }
+
+    private boolean triangulateCounterClockwise(List<Node> nodes,List<Poly> result)
+    {
 outer:
         while(true)
         {
-            assertValidPolygon(tmp);
-
-            for (int i = 0; i < tmp.size() && tmp.size() > 3; i++)
+            for (int i = nodes.size()-1; i >= 0 && nodes.size() > 3; i--)
             {
-                final Line e1 = tmp.get( i );
-                final Line e2 = tmp.get( ( i + 1 ) % tmp.size() );
-                final Line e3 = new Line( e1.node0, e2.node1 );
+                final Node p0 = nodes.get(i);
+                final Node p1 = nodes.get(i-1);
+                final Node p2 = nodes.get(i-2);
 
-                final Node p0 = e1.node0;
-                final Node p1 = e2.node0;
-                final Node p2 = e2.node1;
-
-                if ( e1.node1 != e2.node0 ) {
-                    throw new IllegalStateException( "Lines not connected" );
-                }
                 int l = ((p0.x - p1.x) * (p2.y - p1.y) - (p0.y - p1.y) * (p2.x - p1.x));
                 if ( l < 0 )
                 {
-                    System.out.println("\n--------------------------\n\nLINE: "+e3);
-                    final Line shrunk = e3.shrink();
-                    System.out.println("SHRUNK: "+shrunk);
+                    final Line shrunk = new Line(p0,p2).shrink();
                     if ( isInsidePoly( shrunk, edges ))
                     {
                         // we found an 'ear', remove it
-                        final Poly poly = new Poly().add( e1 ).add( e2 ).add( e3 );
-                        System.out.println("NEW TRIANGLE: "+poly);
+                        final Poly poly = new Poly()
+                                .add( new Line(p2,p1))
+                                .add( new Line(p1,p0) )
+                                .add( new Line(p0,p2) );
                         result.add( poly );
-                        if ( (i+1) < tmp.size() )
-                        {
-                            tmp.remove(i);
-                            tmp.remove(i);
-                            tmp.add(i, e3);
-                        } else {
-                            // special case: replace first & last line
-                            tmp.remove(i);
-                            tmp.remove(0);
-                            tmp.add(e3);
-                        }
+                        nodes.remove(i-1);
                         continue outer;
                     }
                 }
             }
-            if ( tmp.size() > 3 ) {
-                tmp.forEach( l -> System.err.println( l ) );
-                throw new IllegalStateException("Failed to remove any ear but still lines remaining\n\n"+
-                                                   Line.toShortString(tmp));
+            if ( nodes.size() > 3 ) {
+                return false;
             }
             break;
         }
-        assertValidPolygon(tmp);
-        if ( tmp.size() == 3 )
+        return true;
+    }
+
+    private boolean triangulateClockwise(List<Node> nodes,List<Poly> result)
+    {
+outer:
+        while(true)
         {
-            final LineCollection col = new LineCollection();
-            col.addAll( tmp );
-            result.add( col.toPolygon() );
+            for (int i = 0; (i+2) < nodes.size() && nodes.size() > 3; i++)
+            {
+                final Node p0 = nodes.get(i);
+                final Node p1 = nodes.get(i+1);
+                final Node p2 = nodes.get(i+2);
+
+                int l = ((p0.x - p1.x) * (p2.y - p1.y) - (p0.y - p1.y) * (p2.x - p1.x));
+                if ( l < 0 )
+                {
+                    final Line shrunk = new Line(p0,p2).shrink();
+                    if ( isInsidePoly( shrunk, edges ))
+                    {
+                        // we found an 'ear', remove it
+                        final Poly poly = new Poly()
+                                .add( new Line(p0,p1))
+                                .add( new Line(p1,p2) )
+                                .add( new Line(p2,p0) );
+                        result.add( poly );
+                        nodes.remove(i+1);
+                        continue outer;
+                    }
+                }
+            }
+            if ( nodes.size() > 3 ) {
+                return false;
+            }
+            break;
         }
-        return result;
+        return true;
     }
 
     private boolean isInsidePoly(Line e, List<Line> edges)

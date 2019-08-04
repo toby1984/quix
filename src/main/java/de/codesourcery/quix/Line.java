@@ -468,28 +468,24 @@ The last thing to do is check that Xa is included into Ia:
         return x0() == x1();
     }
 
-    public void draw(Graphics2D gfx)
+    public void draw(Graphics2D gfx) {
+        draw(gfx,false);
+    }
+
+    public void draw(Graphics2D gfx,boolean drawNodes)
     {
         gfx.drawLine( x0(), y0(), x1(), y1() );
 
         final int radius = 12;
-        if ( isAxisParallel() )
+        if ( drawNodes )
         {
             final Color current = gfx.getColor();
-            final Node left = isHorizontal() ? leftNode() : topNode();
-            if ( left != null )
-            {
-                gfx.setXORMode( Color.BLUE );
-                gfx.drawArc( left.x - radius / 2, left.y - radius / 2, radius, radius, 0, 360 );
-            }
-
-            final Node right = isHorizontal() ? rightNode() : bottomNode() ;
-            if ( right != null )
-            {
-                gfx.setXORMode( Color.MAGENTA );
-                gfx.drawArc( right.x - radius / 2, right.y - radius / 2, radius, radius, 0, 360 );
-            }
-            gfx.setPaintMode();
+            gfx.setColor( Color.BLUE );
+            gfx.fillArc( node0.x - radius / 2, node0.y - radius / 2, radius, radius, 0, 360 );
+            gfx.drawString( node0.toShortString(),node0.x, node0.y );
+            gfx.setColor( Color.RED);
+            gfx.fillArc( node1.x - radius / 2, node1.y - radius / 2, radius, radius, 0, 360 );
+            gfx.drawString( node1.toShortString(),node1.x, node1.y );
             gfx.setColor(current);
         }
     }

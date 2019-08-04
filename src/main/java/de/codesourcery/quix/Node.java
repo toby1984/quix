@@ -197,6 +197,10 @@ public class Node
         return "Node[ "+id+" , ("+x+","+y+") ] = {"+directions+"}";
     }
 
+    public String toShortString() {
+        return "#"+id+" ("+x+","+y+")";
+    }
+
     public float angleInDegrees(Node other)
     {
         int dx = other.x - this.x;
