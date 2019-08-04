@@ -127,18 +127,14 @@ public class LineCollection implements ICollisionCheck
         {
             gfx.setColor( fillColor );
 
-            final int x[] = new int[lines.size()];
-            final int y[] = new int[lines.size()];
-            int ptr = 0;
-            Node first = lines.get(0).node0;
-            x[ptr] = first.x;
-            y[ptr++] = first.y;
-
-            for (int i = 1, linesSize = lines.size(); i < linesSize; i++)
+            final List<Node> points = Poly.getPoints( this.lines );
+            final int[] x = new int[points.size()];
+            final int[] y = new int[points.size()];
+            for (int i = 0, len = points.size(); i < len; i++)
             {
-                final Node p = lines.get(i).node0;
-                x[ptr]=p.x;
-                x[ptr++]=p.y;
+                final Node n = points.get( i );
+                x[i] = n.x;
+                y[i] = n.y;
             }
             gfx.fillPolygon(x,y,x.length);
         }

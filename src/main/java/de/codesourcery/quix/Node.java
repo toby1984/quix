@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -20,7 +21,7 @@ public class Node
     public Line down;
 
     public static Int2ObjectMap<Node> ALL_NODES =
-        new Int2ObjectArrayMap<>();
+            new Int2ObjectArrayMap<>();
 
     public Node() {
         ALL_NODES.put(id,this);
@@ -50,6 +51,20 @@ public class Node
 
     public boolean matches(Node other) {
         return this.x == other.x && this.y == other.y;
+    }
+
+    public boolean equals(Object o) {
+        if ( o instanceof Node ) {
+            Node that = (Node) o;
+            return this.x == that.x && this.y == that.y;
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(this.x,this.y);
     }
 
     public Node(int x, int y)
@@ -192,7 +207,7 @@ public class Node
         return angle;
     }
 
-      public Node divideBy(int value) {
+    public Node divideBy(int value) {
         x /= value;
         y /= value;
         return this;

@@ -231,12 +231,13 @@ public class TriangulateTest extends JFrame
                 }
                 g.setColor( Color.BLACK );
                 lines.lineColor = Color.BLACK;
+                lines.fillColor = Color.WHITE;
 
                 if ( lines.isEmpty() && firstPoint != null ) {
                     int radius = 12;
                     g.fillArc( firstPoint.x-radius/2,firstPoint.y-radius/2,radius,radius,0,360 );
                 }
-                lines.draw( (Graphics2D) g );
+                lines.draw( (Graphics2D) g, true );
             }
         };
 

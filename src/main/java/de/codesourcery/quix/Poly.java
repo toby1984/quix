@@ -254,4 +254,21 @@ outer:
         }
         return true;
     }
+
+    public static List<Node> getPoints(List<Line> lines) {
+        List<Node> result = new ArrayList<>();
+        for ( int i = 0, len = lines.size() ; i < len ; i++ )
+        {
+            Node n = lines.get(i).node0;
+            if ( ! result.contains( n ) ) {
+                result.add( n );
+            }
+            n = lines.get(i).node1;
+            if ( ! result.contains( n ) ) {
+                result.add( n );
+            }
+
+        }
+        return result;
+    }
 }
