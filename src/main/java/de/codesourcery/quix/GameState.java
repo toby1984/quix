@@ -106,6 +106,13 @@ public class GameState implements ICollisionCheck
         return currentPoly != null;
     }
 
+    public boolean isInCurrentlyDrawnPoly(Line line) {
+        if ( line != null && isDrawingPoly() ) {
+            return currentPoly.containsIdentity( line );
+        }
+        return false;
+    }
+
     public boolean move(Entity entity,Direction direction, Mode mode,boolean applyChanges)
     {
         if ( mode == Mode.LINE_FAST )
@@ -211,31 +218,56 @@ public class GameState implements ICollisionCheck
 
     private void closePoly()
     {
-        final List<Integer> path =
-            astar.findPath(currentPoly.firstNode.id, currentPoly.lastNode.id, mesh, null);
-
-        if ( path.size() < 2 ) {
-            throw new RuntimeException("Internal error, found no path between nodes?");
-        }
-
-        System.out.println("FOUND PATH: " +path.stream().map(Node::get).map(Node::toString).collect(Collectors.joining(" -> ")));
-
         // TODO: Remove debug code
         lastPath.clear();
         lastPath.addAll( currentPoly.lines );
-        final List<Line> searchPath = toLines( path );
-        Collections.reverse(searchPath);
-        lastPath.addAll( searchPath );
+        try
+        {
+            final int firstNodeID = currentPoly.firstNode.id;
+            final int lastNodeID = currentPoly.lastNode.id;
+            System.out.println("SEARCHING PATH FROM "+currentPoly.firstNode+" -> "+currentPoly.lastNode);
+            final List<Integer> path = astar.findPath( firstNodeID, lastNodeID, mesh, null );
+            if ( path.size() < 2 ) {
+                throw new RuntimeException("Internal error, found no path between nodes?");
+            }
 
-        polys = lastPath.toPolygon().triangulate();
+            System.out.println("FOUND PATH: " +path.stream().map(Node::get).map(Node::toString).collect(Collectors.joining(" -> ")));
 
-        // TODO: Remove debug code
+            final List<Line> searchPath = searchPathToLines( path );
+            Collections.reverse(searchPath);
+            lastPath.addAll( searchPath );
+            // TODO: Remove debug code
 
+            final List<Poly> newPolys = lastPath.toPolygon().triangulate();
+
+            // update area
+            double sumArea = newPolys.stream().mapToDouble( x -> x.area() ).sum();
+            player.area += (float) sumArea;
+
+            // update score
+            final int factor;
+            switch( currentPoly.mode ) {
+                case LINE_FAST:
+                    factor = 1;
+                    break;
+                case LINE_SLOW:
+                    factor = 2;
+                    break;
+                default:
+                    throw new IllegalStateException( "Unexpected value: " + currentPoly.mode );
+            }
+            player.score += (int) (sumArea*factor);
+            polys.addAll( newPolys );
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
         playfieldLines.addAll( currentPoly.lines );
         currentPoly=null;
     }
 
-    private List<Line> toLines(List<Integer> nodeIds)
+    private List<Line> searchPathToLines(List<Integer> nodeIds)
     {
         final List<Line> result = new ArrayList<>();
         for ( int ptr = 0 ; ptr < nodeIds.size() ; ptr++ )
@@ -247,7 +279,12 @@ public class GameState implements ICollisionCheck
             final Node next = Node.get( nodeIds.get(ptr+1) );
             Line currentLine = playfieldLines.findLine(current,next);
             if ( currentLine == null ) {
-                throw new RuntimeException("Found no line for "+current+" -> "+next);
+                // check current polygon
+                currentLine = currentPoly.findLine( current,next );
+                if ( currentLine == null )
+                {
+                    throw new RuntimeException( "Found no line for " + current + " -> " + next );
+                }
             }
             result.add( currentLine );
         }
@@ -264,7 +301,7 @@ public class GameState implements ICollisionCheck
     {
         final Node endpoint = tmp.node0;
         return (tmp.isHorizontal() && ( endpoint.y == 0 || endpoint.y == PLAYFIELD_HEIGHT ) ) ||
-                 (tmp.isVertical() && ( endpoint.x == 0 || endpoint.x == PLAYFIELD_WIDTH ));
+        (tmp.isVertical() && ( endpoint.x == 0 || endpoint.x == PLAYFIELD_WIDTH ));
     }
 
     @Override
@@ -312,6 +349,10 @@ public class GameState implements ICollisionCheck
         // animate quix
         quix.tick( this );
 
+        if ( gameOver ) {
+            return;
+        }
+
         // animate enemies
 outer:
         for ( int j = difficulty.enemySpeed ; j > 0 ; j-- )
@@ -338,7 +379,6 @@ outer:
     {
         drawBorder(gfx);
         drawAreas(gfx);
-        drawPlayer(gfx);
         drawEnemies(gfx);
         quix.draw(gfx);
 
@@ -346,19 +386,18 @@ outer:
         gfx.setColor(Color.RED);
         currentLine.draw(gfx);
 
-        gfx.drawString("Entity @ "+player.x+","+player.y,20,20);
-
         if ( ! lastPath.isEmpty() ) {
             gfx.setColor( Color.ORANGE );
             lastPath.draw( gfx );
         }
 
         if ( ! polys.isEmpty() ) {
-            gfx.setColor( Color.BLACK );
             for ( Poly p : polys ) {
                 p.draw( gfx );
             }
         }
+
+        drawPlayer(gfx);
 
         if ( gameOver )
         {
@@ -377,6 +416,13 @@ outer:
                 gfx.setFont( oldFont );
             }
         }
+
+        gfx.setColor( Color.BLACK );
+        gfx.drawString("Entity @ "+player.x+","+player.y,20,20);
+        gfx.drawString("Score: "+player.score, 20, 30);
+        final float totalArea = PLAYFIELD_WIDTH * PLAYFIELD_HEIGHT;
+        final float perc = (int) (100*(player.area/totalArea));
+        gfx.drawString("Area: "+player.area+"( "+perc+"% of "+totalArea+")" ,20, 40);
     }
 
     private void drawPlayer(Graphics2D gfx) {
@@ -467,12 +513,12 @@ outer:
             final Line l = lines.get(i);
             if ( ! isBorder(l) )
             {
-                l.draw( gfx );
+                l.draw( gfx, true );
             }
         }
         if ( currentPoly != null )
         {
-            currentPoly.draw(gfx);
+            currentPoly.draw(gfx, false,true);
         }
         gfx.drawString("Mode: "+getMode(Mode.MOVE),15,15);
     }
@@ -540,22 +586,53 @@ outer:
 
     public final NavMesh mesh = new AbstractNavMesh()
     {
+        private int safeGet(int forbiddenId, int toTest) {
+            if ( forbiddenId == toTest ) {
+                throw new RuntimeException("Line has same start and end point ?");
+            }
+            return toTest;
+        }
+
         @Override
         public int getNeighbours(int node, IntOpenHashSet visitedNodeIds, int[] result)
         {
             Node n = Node.get(node);
+            System.out.println("Getting neightbours for "+n);
+
             int count=0;
-            if ( n.up != null && ! currentPoly.containsIdentity(n.up ) ) {
-                result[count++] = n.up.getOther(n).id;
+            if ( n.up != null )
+            {
+                final Node other = n.up.getOther( n );
+                if ( ! visitedNodeIds.contains( other.id ) && ! currentPoly.containsIdentity(n.up) )
+                {
+                    System.out.println( "Adding UP: " + other );
+                    result[count++] = safeGet( n.id, other.id );
+                }
             }
-            if ( n.down != null && ! currentPoly.containsIdentity(n.down )) {
-                result[count++] = n.down.getOther(n).id;
+            if ( n.down != null ) {
+                final Node other = n.down.getOther( n );
+                if ( ! visitedNodeIds.contains( other.id ) && ! currentPoly.containsIdentity(n.down) )
+                {
+                    System.out.println( "Adding DOWN:" + other );
+                    result[count++] = safeGet( n.id, other.id );
+                }
             }
-            if ( n.left!= null && ! currentPoly.containsIdentity(n.left )) {
-                result[count++] = n.left.getOther(n).id;
+            if ( n.left!= null ) {
+                final Node other = n.left.getOther( n );
+                if ( ! visitedNodeIds.contains( other.id ) &&  ! currentPoly.containsIdentity(n.left) )
+                {
+                    System.out.println( "Adding LEFT: " + other );
+                    result[count++] = safeGet( n.id, other.id );
+                }
             }
-            if ( n.right!= null && ! currentPoly.containsIdentity(n.right )) {
-                result[count++] = n.right.getOther(n).id;
+            if ( n.right!= null )
+            {
+                final Node other = n.right.getOther( n );
+                if ( ! visitedNodeIds.contains( other.id ) && ! currentPoly.containsIdentity(n.right))
+                {
+                    System.out.println( "Adding RIGHT: " + other );
+                    result[count++] = safeGet( n.id, other.id );
+                }
             }
             return count;
         }
@@ -616,5 +693,9 @@ outer:
             move(player, newDir, mode, true);
             player.previousMovement = newDir;
         }
+    }
+
+    public void markGameOver() {
+        gameOver = true;
     }
 }

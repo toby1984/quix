@@ -1,5 +1,6 @@
 package de.codesourcery.quix;
 
+import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.util.ArrayList;
@@ -17,10 +18,41 @@ public class Poly
 
     public void draw(Graphics2D gfx)
     {
-        for (int i = 0, edgesSize = edges.size(); i < edgesSize; i++)
-        {
-            draw( edges.get( i ), gfx );
+        if ( edges.isEmpty() ) {
+            return;
         }
+        List<Node> nodes = new ArrayList<>();
+        nodes.add( edges.get(0).node0 );
+        nodes.add( edges.get(0).node1 );
+
+        for (int i = 1, edgesSize = edges.size(); i < edgesSize; i++)
+        {
+            final Line node = edges.get( i );
+            if ( ! nodes.contains( node.node0 ) ) {
+                nodes.add( node.node0 );
+            }
+            if ( ! nodes.contains( node.node0 ) ) {
+                nodes.add( node.node0 );
+            }
+        }
+        final int[] x = new int[ nodes.size() ];
+        final int[] y = new int[ nodes.size() ];
+        int ptr = 0;
+        for ( var n : nodes ) {
+            x[ptr] = n.x;
+            y[ptr++] = n.y;
+        }
+        gfx.setColor( Color.RED );
+        gfx.fillPolygon( x,y,x.length );
+        gfx.setColor( Color.WHITE );
+        gfx.drawPolygon( x,y,x.length );
+    }
+
+    public float area() {
+        if ( this.edges.size() != 3 ) {
+            throw new IllegalArgumentException("Can only calculate area of triangles (was: "+this.edges.toString()+")");
+        }
+        return 0.5f*(edges.get(0).length() + edges.get(1).length() + edges.get(2).length() );
     }
 
     @Override
@@ -43,11 +75,6 @@ public class Poly
             vertices.add( l.node1 );
         }
         return this;
-    }
-
-    private void draw(Line e, Graphics2D gfx)
-    {
-        gfx.drawLine( e.node0.x, e.node0.y, e.node1.x, e.node1.y );
     }
 
     public List<Poly> triangulate()
@@ -89,8 +116,8 @@ outer:
             for (int i = nodes.size()-1; i >= 0 && nodes.size() > 3; i--)
             {
                 final Node p0 = nodes.get(i);
-                final Node p1 = nodes.get(i-1);
-                final Node p2 = nodes.get(i-2);
+                final Node p1 = nodes.get( (i-1) >= 0 ? i - 1 : (i-1)+nodes.size() );
+                final Node p2 = nodes.get( (i-2) >= 0 ? i - 2 : (i-2)+nodes.size() );
 
                 int l = ((p0.x - p1.x) * (p2.y - p1.y) - (p0.y - p1.y) * (p2.x - p1.x));
                 if ( l < 0 )

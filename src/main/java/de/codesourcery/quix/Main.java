@@ -200,7 +200,17 @@ public class Main extends JFrame
             final Graphics2D gfx = (Graphics2D) g;
             super.paintComponent( gfx );
 
-            gfx.setTransform( AffineTransform.getTranslateInstance( PLAYFIELD_XOFFSET, PLAYFIELD_YOFFSET) );
+            double w = getWidth();
+            double h = getHeight();
+
+            final double scaleW = w / (GameState.PLAYFIELD_WIDTH*1.1);
+            final double scaleH = h / (GameState.PLAYFIELD_HEIGHT*1.1);
+
+            AffineTransform transform =
+                AffineTransform.getScaleInstance( scaleW, scaleH );
+            transform.translate( PLAYFIELD_XOFFSET, PLAYFIELD_YOFFSET );
+
+            gfx.setTransform( transform );
 
             // render game
             gameState.draw( gfx );

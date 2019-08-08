@@ -29,12 +29,16 @@ public class Quix
         }
 
         // animate quix
-        for (int j = state.difficulty.quixSpeed; j >= 0 ; j-- )
+        boolean gameOver = false;
+        for (int j = state.difficulty.quixSpeed; ! gameOver && j >= 0 ; j-- )
         {
-            for (int i = 0, linesSize = lines.size(); i < linesSize; i++)
+            for (int i = 0, linesSize = lines.size(); ! gameOver && i < linesSize; i++)
             {
-                lines.get(i).tick(state);
+                gameOver = lines.get( i ).tick( state );
             }
+        }
+        if ( gameOver ) {
+            state.markGameOver();
         }
     }
 

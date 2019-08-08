@@ -192,8 +192,11 @@ public class Node
         final boolean hasRight = right != null;
         final boolean hasUp = up != null;
         final boolean hasDown = down != null;
-        final String directions = List.of( hasLeft?"LEFT":"", hasRight?"RIGHT":"",
-                hasUp?"UP":"", hasDown?"DOWN":"").stream().filter( x -> x.length()>0 ).collect( Collectors.joining(","));
+        final String directions = List.of(
+            hasLeft?"LEFT("+left.getOther(this).id+")":"",
+            hasRight?"RIGHT("+right.getOther(this).id+")":"",
+            hasUp?"UP("+up.getOther(this).id+")":"",
+            hasDown?"DOWN("+down.getOther(this).id+")":"").stream().filter( x -> x.length()>0 ).collect( Collectors.joining(","));
         return "Node[ "+id+" , ("+x+","+y+") ] = {"+directions+"}";
     }
 

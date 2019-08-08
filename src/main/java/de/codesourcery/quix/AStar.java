@@ -23,10 +23,10 @@ public class AStar
     // max. number of nodes that may be visited
     // Exceeding this number will make the min-heap crash
     // as it uses a fixed-length array
-    private static final int MAX_NODES = 65535;
+    private static final int MAX_NODES = 256;
 
     // max. number of nodes any node in the NavMesh may have
-    private static final int MAX_NEIGHBOURS = 8;
+    private static final int MAX_NEIGHBOURS = 4;
 
     // Until Java has value objects, I'm using
     // a single int[] array to hold all node data
@@ -84,7 +84,7 @@ public class AStar
                 navMesh.getCoordinates( extId )+" "+f+" = "+g+" + "+h+", parent="+parentIntId;
     }
 
-    public List<Integer> findPath(int startNodeExtId,int dstNodeExtID, NavMesh navMesh, Spy spy)
+    public List<Integer> findPath(int startNodeExtId,int dstNodeExtID, NavMesh navMesh, Spy spy) throws OutOfPathMemoryException
     {
         this.navMesh = navMesh;
         reset();
@@ -261,14 +261,29 @@ D) Stop when you:
      * @param extNodeId
      * @return
      */
-    private int createInternalNode(int extNodeId)
+    private int createInternalNode(int extNodeId) throws OutOfPathMemoryException
     {
         setExternalNodeId( nodeCount, extNodeId );
         return nodeCount++;
     }
 
-    private void setExternalNodeId(int intNodeId, int extNodeId) {
-        this.nodeData[ intNodeId * NODE_DATA_SIZE + OFFSET_NODE_ID] = extNodeId;
+    public static final class OutOfPathMemoryException extends RuntimeException
+    {
+        public OutOfPathMemoryException(String message)
+        {
+            super( message );
+        }
+    }
+
+    private void setExternalNodeId(int intNodeId, int extNodeId) throws OutOfPathMemoryException
+    {
+        try
+        {
+            this.nodeData[intNodeId * NODE_DATA_SIZE + OFFSET_NODE_ID] = extNodeId;
+        } catch(ArrayIndexOutOfBoundsException e) {
+            throw new OutOfPathMemoryException( "Internal memory exhausted trying to store data for internal node #" +
+                                                intNodeId + " (external node #" + extNodeId + ")" );
+        }
     }
 
     private void setFGH(int intNodeId,int f,int g,int h)

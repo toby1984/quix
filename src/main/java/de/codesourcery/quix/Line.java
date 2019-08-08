@@ -5,6 +5,7 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import static java.lang.Math.max;
@@ -13,6 +14,8 @@ import static java.lang.Math.sqrt;
 
 public class Line
 {
+    private static final Random RND = new Random(0xdeadbeef);
+
     private static final float EPSILON = 0.00001f;
 
     public Node node0 = new Node();
@@ -25,6 +28,12 @@ public class Line
         this.node0 = n0;
         this.node1 = n1;
         updateIntercept();
+    }
+
+    public float length() {
+        float dx = node1.x - node0.x;
+        float dy = node1.y - node0.y;
+        return (float) Math.sqrt( dx*dx + dy*dy );
     }
 
     public Line shrink()
@@ -344,7 +353,9 @@ public class Line
         if ( obj instanceof Line)
         {
             final Line o = (Line) obj;
-            return obj == this || this.x0() == o.x0() && this.y0() == o.y0() && this.x1() == o.x1() && this.y0() == o.y1();
+            return obj == this ||
+            ( ( this.x0() == o.x0() && this.y0() == o.y0() && this.x1() == o.x1() && this.y1() == o.y1() ) ||
+              ( this.x0() == o.x1() && this.y0() == o.y1() && this.x1() == o.x0() && this.y1() == o.y0() ) );
         }
         return false;
     }
@@ -352,7 +363,7 @@ public class Line
     @Override
     public int hashCode()
     {
-        return Objects.hash( x0(), y0(), x1(), y1(), m );
+        return x0() ^ y0() ^ x1() ^ y1() ^ Float.hashCode( m );
     }
 
     public boolean intersects(Line other)
@@ -476,18 +487,55 @@ The last thing to do is check that Xa is included into Ia:
     {
         gfx.drawLine( x0(), y0(), x1(), y1() );
 
-        final int radius = 12;
         if ( drawNodes )
         {
             final Color current = gfx.getColor();
+
             gfx.setColor( Color.BLUE );
-            gfx.fillArc( node0.x - radius / 2, node0.y - radius / 2, radius, radius, 0, 360 );
-            gfx.drawString( node0.toShortString(),node0.x, node0.y );
+            RND.setSeed( node0.id );
+            drawNode( node0, RND.nextInt( 4 ) , gfx );
+
             gfx.setColor( Color.RED);
-            gfx.fillArc( node1.x - radius / 2, node1.y - radius / 2, radius, radius, 0, 360 );
-            gfx.drawString( node1.toShortString(),node1.x, node1.y );
+            RND.setSeed( node1.id );
+            drawNode( node1, RND.nextInt( 4 ) , gfx );
+
             gfx.setColor(current);
         }
+    }
+
+    private void drawNode(Node node,int quadrant,Graphics2D gfx)
+    {
+        int x=node.x,y=node.y;
+        final int radius = 12;
+        gfx.fillArc( x - radius / 2, y - radius / 2, radius, radius, 0, 360 );
+
+        /*
+         * 0 | 1
+         * --+--
+         * 3 | 2
+         */
+        switch( quadrant )
+        {
+            case 0:
+                x -= radius;
+                y -= radius;
+                break;
+            case 1:
+                x += radius;
+                y -= radius;
+                break;
+            case 2:
+                x += radius;
+                y += radius;
+                break;
+            case 3:
+                x -= radius;
+                y += radius;
+                break;
+            default:
+                throw new IllegalStateException( "Unexpected value: " + quadrant );
+        }
+        gfx.drawString( node0.toShortString(), x, y );
     }
 
     public Node getNodeForEndpoint(int x,int y) {

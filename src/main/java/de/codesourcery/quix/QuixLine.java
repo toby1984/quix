@@ -22,7 +22,7 @@ public class QuixLine extends Line
      * @param check
      * @return line the quix collided with (if any)
      */
-    public Line tick(ICollisionCheck check)
+    public boolean tick(GameState check)
     {
         int newX0 = x0() + dx0;
         int newY0 = y0() + dy0;
@@ -36,10 +36,13 @@ public class QuixLine extends Line
         boolean flipX0=false;
         boolean flipX1=false;
 
-        Line result;
-        Line tmp = result = check.getLine(newX0, newY0);
+        boolean gameOver = false;
+
+        // check first line endpoint
+        Line tmp = check.getLine(newX0, newY0);
         if ( tmp != null )
         {
+            gameOver |= check.isInCurrentlyDrawnPoly( tmp );
             if ( dy0 != 0 )
             {
                 if ( dx0 != 0 ) {
@@ -64,12 +67,11 @@ public class QuixLine extends Line
             }
         }
 
+        // check second line endpoint
         tmp = check.getLine( newX1,newY1 );
         if ( tmp != null )
         {
-            if ( result == null ) {
-                result = tmp;
-            }
+            gameOver |= check.isInCurrentlyDrawnPoly( tmp );
             if ( dy1 != 0 )
             {
                 if ( dx1 != 0 ) {
@@ -94,13 +96,11 @@ public class QuixLine extends Line
             }
         }
 
-        tmp = check.intersects(newX0, newY0, newX1, newY1);
-        if (tmp != null && ! check.isBorder( tmp ) )
+        // check whether line itself intersects another line
+        tmp = check.intersects( newX0, newY0, newX1, newY1 );
+        if ( tmp != null && ! check.isBorder( tmp ) )
         {
-            if ( result == null )
-            {
-                result = tmp;
-            }
+            gameOver |= check.isInCurrentlyDrawnPoly( tmp );
             flipX0 = true;
             flipX1 = true;
             flipY0 = true;
@@ -132,12 +132,12 @@ public class QuixLine extends Line
             setX1( x1() + dx1 );
             setY1( y1() + dy1 );
         }
-        return result;
+        return gameOver;
     }
 
     public boolean hasSameHeading(QuixLine other)
     {
         return ( this.dx0 == other.dx0 && this.dy0 == other.dy0 || this.dx0 == -other.dx0 && this.dy0 == -other.dy0) &&
-               ( this.dx1 == other.dx1 && this.dy1 == other.dy1 || this.dx1 == -other.dx1 && this.dy1 == -other.dy1);
+        ( this.dx1 == other.dx1 && this.dy1 == other.dy1 || this.dx1 == -other.dx1 && this.dy1 == -other.dy1);
     }
 }
