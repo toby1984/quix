@@ -42,7 +42,10 @@ public class QuixLine extends Line
         Line tmp = check.getLine(newX0, newY0);
         if ( tmp != null )
         {
-            gameOver |= check.isInCurrentlyDrawnPoly( tmp );
+            if ( ! check.isBorder( tmp ) )
+            {
+                gameOver = check.isInCurrentlyDrawnPoly( tmp );
+            }
             if ( dy0 != 0 )
             {
                 if ( dx0 != 0 ) {
@@ -71,7 +74,10 @@ public class QuixLine extends Line
         tmp = check.getLine( newX1,newY1 );
         if ( tmp != null )
         {
-            gameOver |= check.isInCurrentlyDrawnPoly( tmp );
+            if ( ! check.isBorder( tmp ) )
+            {
+                gameOver |= check.isInCurrentlyDrawnPoly( tmp );
+            }
             if ( dy1 != 0 )
             {
                 if ( dx1 != 0 ) {
@@ -98,9 +104,12 @@ public class QuixLine extends Line
 
         // check whether line itself intersects another line
         tmp = check.intersects( newX0, newY0, newX1, newY1 );
-        if ( tmp != null && ! check.isBorder( tmp ) )
+        if ( tmp != null )
         {
-            gameOver |= check.isInCurrentlyDrawnPoly( tmp );
+            if ( ! check.isBorder( tmp ) )
+            {
+                gameOver |= check.isInCurrentlyDrawnPoly( tmp );
+            }
             flipX0 = true;
             flipX1 = true;
             flipY0 = true;
@@ -118,6 +127,7 @@ public class QuixLine extends Line
         } else {
             setX0( x0() + dx0 );
             setY0( y0() + dy0 );
+            updateIntercept();
         }
 
         if ( flipX1 || flipY1 )
@@ -131,6 +141,7 @@ public class QuixLine extends Line
         } else {
             setX1( x1() + dx1 );
             setY1( y1() + dy1 );
+            updateIntercept();
         }
         return gameOver;
     }

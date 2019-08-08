@@ -49,10 +49,6 @@ public class Node
         return new Node(this);
     }
 
-    public boolean matches(Node other) {
-        return this.x == other.x && this.y == other.y;
-    }
-
     public boolean equals(Object o) {
         if ( o instanceof Node ) {
             Node that = (Node) o;

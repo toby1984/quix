@@ -95,7 +95,7 @@ public class GameState implements ICollisionCheck
 
         player.set(0,0);
         player.setCurrentLine(top);
-        setupQuix();
+        setupQuix(difficulty);
 
         for (int i = 0; i < difficulty.enemyCount ; i++ ) {
             spawnEnemy();
@@ -107,8 +107,11 @@ public class GameState implements ICollisionCheck
     }
 
     public boolean isInCurrentlyDrawnPoly(Line line) {
-        if ( line != null && isDrawingPoly() ) {
-            return currentPoly.containsIdentity( line );
+        if ( isDrawingPoly() ) {
+            if ( currentPoly.currentLine.equals( line ) ) {
+                return true;
+            }
+            return currentPoly.contains( line );
         }
         return false;
     }
@@ -562,11 +565,11 @@ outer:
         return distance < 20 ? result : null;
     }
 
-    private void setupQuix()
+    private void setupQuix(Difficulty difficulty)
     {
         int p0x=50,p0y=50,p1x=75,p1y=25;
         int xStep = 5, yStep = 5;
-        for ( int lines = 10 ; lines > 0 ; lines-- )
+        for ( int lines = difficulty.quixLineCount ; lines > 0 ; lines-- )
         {
             final QuixLine line = new QuixLine( p0x, p0y, p1x, p1y );
             line.dx0 = 1;

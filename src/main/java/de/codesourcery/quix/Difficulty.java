@@ -3,6 +3,7 @@ package de.codesourcery.quix;
 public class Difficulty
 {
     public int quixSpeed;
+    public int quixLineCount=1;
     public int enemyCount;
     public int enemySpeed=2;
 

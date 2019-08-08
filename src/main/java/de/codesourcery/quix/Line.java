@@ -87,12 +87,6 @@ public class Line
         this(p0.x,p0.y,p1.x,p1.y);
     }
 
-    private Line(Line other) {
-        this.node0 = other.node0;
-        this.node1 = other.node1;
-        this.m = other.m;
-    }
-
     public Node getOther(Node n) {
         if ( n == node0 ) {
             return node1;
@@ -101,9 +95,6 @@ public class Line
             return node0;
         }
         throw new IllegalArgumentException( "Node "+n+" is no part of line "+this);
-    }
-    public boolean isEndpoint(int x,int y) {
-        return ( this.x0() == x && this.y0() == y ) ||( this.x1() == x && this.y1() == y );
     }
 
     public boolean isLeftEndpoint(int x,int y) {
@@ -134,15 +125,6 @@ public class Line
         return x1() == x && y1() == y;
     }
 
-    /**
-     * Creates a copy WITHOUT copying the line's nodes.
-     *
-     * @return
-     */
-    public Line shallowCopy() {
-        return new Line(this);
-    }
-
     public Line(int x0, int y0, int x1, int y1)
     {
         set(x0,y0,x1,y1);
@@ -155,11 +137,13 @@ public class Line
 
     public void updateIntercept()
     {
-        if ( ! isVertical() ) // prevent division by zero
+        if ( isVertical() ) // prevent division by zero
+        {
+            m = 0;
+        }
+        else
         {
             m = ( y1() - y0() ) / (float) ( x1() - x0() );
-        } else {
-            m = 0;
         }
     }
 
@@ -168,18 +152,6 @@ public class Line
         node0.set(x0,y0);
         node1.set(x1,y1);
         updateIntercept();
-    }
-
-    public boolean sameStart(Line other) {
-        return this.x0() == other.x0() && this.y0() == other.y0();
-    }
-
-    public boolean sameEnd(Line other) {
-        return this.x1() == other.x1() && this.y1() == other.y1();
-    }
-
-    public boolean shareEndpoint(Line other) {
-        return (this.hasEndpoint(other.node0) || this.hasEndpoint(other.node1));
     }
 
     public boolean hasEndpoint(int x,int y) {
@@ -196,14 +168,6 @@ public class Line
             return node1 == n1;
         }
         return false;
-    }
-
-    public boolean hasEndpoint(Node n)
-    {
-        if ( n == null ) {
-            throw new IllegalArgumentException("Node must not be NULL");
-        }
-        return this.node0 == n || this.node1 == n;
     }
 
     @Override
@@ -354,8 +318,8 @@ public class Line
         {
             final Line o = (Line) obj;
             return obj == this ||
-            ( ( this.x0() == o.x0() && this.y0() == o.y0() && this.x1() == o.x1() && this.y1() == o.y1() ) ||
-              ( this.x0() == o.x1() && this.y0() == o.y1() && this.x1() == o.x0() && this.y1() == o.y0() ) );
+                    ( ( this.node0.equals( o.node0 ) && this.node1.equals( o.node1 ) ) ||
+                      ( this.node1.equals( o.node0 ) && this.node0.equals( o.node1 ) ) );
         }
         return false;
     }
@@ -383,7 +347,7 @@ public class Line
         if ( thisVertical || otherVertical )
         {
             // these need special treatment to prevent division by zero
-            if ( thisVertical == otherVertical ) { // both are vertical, check overlap on
+            if ( thisVertical == otherVertical ) { // two vertical lines
                 if ( thisX0 != otherX0 ) // cannot possibly overlap
                 {
                     return false;
@@ -464,11 +428,6 @@ The last thing to do is check that Xa is included into Ia:
             return false; // intersection is out of bound
         }
         return true;
-    }
-
-    public boolean isAxisParallel()
-    {
-        return isHorizontal() || isVertical();
     }
 
     public boolean isHorizontal() {

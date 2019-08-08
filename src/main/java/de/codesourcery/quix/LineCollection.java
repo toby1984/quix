@@ -59,10 +59,10 @@ public class LineCollection implements ICollisionCheck
     @Override
     public Line intersects(Line line)
     {
-        for (int i = 0, playfieldLinesSize = lines.size(); i < playfieldLinesSize; i++)
+        for (int i = 0, len = lines.size(); i < len; i++)
         {
             final Line l = lines.get( i );
-            if ( l.intersects(line ) )
+            if ( l.intersects(line) )
             {
                 return l;
             }
@@ -104,6 +104,19 @@ public class LineCollection implements ICollisionCheck
         {
             Line l = lines.get(i);
             if (l == line)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean contains(Line line)
+    {
+        for (int i = 0, linesSize = lines.size(); i < linesSize; i++)
+        {
+            Line l = lines.get(i);
+            if ( line.equals( l ) )
             {
                 return true;
             }

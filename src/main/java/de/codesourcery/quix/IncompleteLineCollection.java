@@ -17,10 +17,6 @@ public abstract class IncompleteLineCollection extends LineCollection
 
     public final Mode mode;
 
-    public boolean isEndpoint(Node n) {
-        return firstNode.id == n.id || (lastNode != null && lastNode.id == n.id );
-    }
-
     public IncompleteLineCollection(Mode mode, Direction currentDirection, Node newNode)
     {
         if ( currentDirection == null ) {
